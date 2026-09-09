@@ -2,7 +2,7 @@
 
 한국어 설명과 영문 명칭을 함께 제공하는 교육용 3D 뇌 해부도입니다. 별도 계정, 로그인, API 키 없이 브라우저에서 실행됩니다.
 
-**웹에서 사용:** [Brain Atlas 열기](https://honggi82-brain-atlas.honggi82.chatgpt.site). 설치하거나 개인 컴퓨터에서 서버를 실행할 필요가 없습니다. GitHub 소스 저장소는 비공개로 유지합니다.
+**웹에서 사용:** [Brain Atlas 열기](https://honggi82.github.io/brain-lab/about_brain/). 설치하거나 개인 컴퓨터에서 서버를 실행할 필요가 없습니다. GitHub 원본 소스 저장소는 비공개로 유지하며, 웹 실행용 빌드와 공개 자료는 연구실 사이트 저장소에서 제공합니다.
 
 상단의 **Kr / En**으로 화면과 기능 설명의 언어를 선택합니다. Kr에서는 `해마 (Hippocampus)`처럼 영어를 괄호로 병기합니다. 단순 직역 대신 해부학 명칭을 사용하며, `중심전회` 같은 임상 동의어로도 검색할 수 있습니다. [용어 표기 기준](public/TERMINOLOGY.md)을 참고하세요.
 
@@ -84,7 +84,9 @@ npm run build
 
 ## 공개 배포
 
-2026-09-09 소유자의 요청으로 Sites에 공개 배포했습니다. 웹사이트는 주소를 아는 누구나 로그인 없이 사용할 수 있고, GitHub 저장소는 비공개입니다. `.openai/hosting.json`의 기존 프로젝트를 재사용하며, 검증한 소스와 정적 빌드 결과를 함께 배포합니다. 공개 링크: https://honggi82-brain-atlas.honggi82.chatgpt.site
+2026-09-10 소유자의 요청으로 주 사용 주소를 **https://honggi82.github.io/brain-lab/about_brain/** 으로 옮겼습니다. 연구실 사이트의 `뇌 해부도 / Brain Atlas` 메뉴로 접속하며, 로그인은 필요하지 않습니다. 개발 소스 저장소 `honggi82/brain-atlas`는 비공개로 유지합니다.
+
+GitHub Pages용 빌드는 `npm run build:pages`로 생성합니다. `dist-pages/` 안의 파일만 `honggi82/brain-lab` 저장소의 `about_brain/`에 배치합니다. 이 빌드는 `/brain-lab/about_brain/`를 기준 경로로 사용하므로 JavaScript, 3D 모델, Draco와 섬유 자료가 같은 경로에서 로드됩니다. 출처·라이선스 파일도 함께 배포합니다. 기존 연구실 사이트의 파일은 유지하며 GitHub Pages의 `main` 루트 배포 설정을 사용합니다. 기본 `npm run build`는 로컬 검토용 루트 경로 빌드를 그대로 제공합니다.
 
 일반 정적 호스팅에서 빌드 명령은 `npm run build`, 출력 폴더는 `dist`입니다. 별도 백엔드·데이터베이스·비밀키가 필요하지 않습니다. Draco `.wasm` 파일을 `application/wasm`으로 제공해야 합니다. `index.html`의 `noindex`는 검색 노출 억제 요청일 뿐, 접근 제한이나 비공개 보장을 제공하지 않습니다.
 

@@ -1,4 +1,14 @@
-# Verification — 2026-09-09
+# Verification — 2026-09-10
+
+## GitHub Pages migration
+
+- The current app URL is **https://honggi82.github.io/brain-lab/about_brain/**. GitHub Pages reports `built` for public `brain-lab` commit `d0e8e4362a14d0803cdc71fc6204ef7ba2947d22`. The existing Pages configuration (`main`, repository root, `.nojekyll`) is unchanged.
+- Added 94 runtime/data/licence files under `about_brain/`, without source maps, private development source, dependencies, hosting credentials or backups. All copied files matched the validated `dist-pages/` build. The original root-path `dist/` remains available as a baseline.
+- Added the `뇌 해부도 / Brain Atlas` link to all 10 existing lab pages, with bilingual navigation and cache-version updates. Existing page content, footer, assets and layout are preserved. Both READMEs and the private app repository's homepage URL now point to the new address. The original `honggi82/brain-atlas` repository remains private; the deployed browser assets are public in `brain-lab`.
+- `npm.cmd run build:pages` uses `/brain-lab/about_brain/` for scripts, model/data fetches and Draco. The build passed with the retained Three.js size advisory. `npm.cmd run check` passed for 17 JavaScript files and UTF-8 text; `npm.cmd test` passed **20/20**. Modified lab JavaScript and the new Python smoke test also passed syntax checks.
+- `python -X utf8 tests/pages-smoke.py --site-dir ../.brain-atlas-pages` and `python -X utf8 tests/pages-smoke.py --url https://honggi82.github.io/brain-lab/` both passed. Each exercises bilingual lab navigation at 1536 pixels and actual full app flows at **1280 × 720** and **390 × 844**: all five functional entries, insula, native streamlines, matrix/threshold/region filters, representation switching, unresolved-code recovery, documentation/wasm/workbook downloads and the slashless URL redirect. No failed same-origin requests or captured app page errors remained. Temporary browsers and the local server closed in `finally`.
+- Existing source/config/document backups are beside the originals with `.bak-20260910-pages`, including `README.md.bak-20260910-pages` and `package.json.bak-20260910-pages`. The lab checkout at `../.brain-atlas-pages/` contains 13 corresponding backups, including `index.html.bak-20260910-pages`. They are excluded from publication. Original file newline styles and Korean UTF-8 were rechecked; longest new runtime path is 86 characters.
+- The existing in-app tab handoff returned `queued`; the deployed URL was independently exercised above. No deletion or redirect was applied to the former Sites deployment. Older publication sections below are historical snapshots.
 
 ## Unified white matter explorer, insula correction and functional anatomy
 
