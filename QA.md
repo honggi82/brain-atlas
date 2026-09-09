@@ -10,7 +10,9 @@
 - The first candidate test incorrectly assumed that re-entering white-matter mode resets the chosen pathway to the corpus callosum. It correctly preserved the previous whole-brain state; the test now explicitly selects corpus callosum before testing the no-table case. No application assertion was weakened.
 - Milestone screenshots `test-results/insula-1280.png` and `test-results/sma-1280.png` were visually inspected. The insula is shown inside transparent covering cortex; SMA shows the stated anatomical reference, not a segmented functional region.
 - Source, test and README backups remain beside their files with suffixes `.bak-20260909-unified` and `.bak-20260909-insula`. Public data/document backups are in `test-results/insula-backups/` to prevent Vite from shipping them. All backups are excluded from Git and deployment.
-- This section records the new local verification; publication results for this change are recorded after deployment. Older sections below describe previous snapshots. Expert review, physical phones, Safari and Firefox remain untested.
+- Published Sites version 3 from `c0bd7fb25570d548f427c0cbe16f69ff581801b9` to the existing URL, **https://honggi82-brain-atlas.honggi82.chatgpt.site**. `python -X utf8 tests/public-smoke.py https://honggi82-brain-atlas.honggi82.chatgpt.site` passed in fresh anonymous HTTPS contexts at both viewport sizes, including all five functional entries, the corrected insula and unified white-matter flow. No page errors or horizontal overflow were captured. The GitHub API reported `isPrivate: true` for `honggi82/brain-atlas`.
+- The static archive was validated before saving, with 95 files and no backups, source tree or dependencies. The existing Windows packaging workaround was reused. The existing in-app tab handoff returned `queued`; this does not affect the independently verified public URL. This verification-record update changes no deployed runtime files.
+- This section records the current publication; older sections below describe previous snapshots. Expert review, physical phones, Safari and Firefox remain untested.
 
 ## Requested Korean lobe names
 
