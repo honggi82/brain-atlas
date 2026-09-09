@@ -85,13 +85,3 @@ npm run build
 ```
 
 실제 브라우저 확인 결과는 [QA.md](QA.md)에 기록합니다.
-
-## 공개 배포
-
-2026-09-10 소유자의 요청으로 주 사용 주소를 **https://honggi82.github.io/brain-lab/about_brain/** 으로 옮겼습니다. 연구실 사이트의 `뇌 해부도 / Brain Atlas` 메뉴로 접속하며, 로그인은 필요하지 않습니다. 개발 소스 저장소 `honggi82/brain-atlas`는 비공개로 유지합니다.
-
-GitHub Pages용 빌드는 `npm run build:pages`로 생성한 뒤 `python scripts/integrate-lab.py <brain-lab-checkout>`로 연구실 사이트에 통합합니다. `about_brain/index.html`은 연구실 메뉴를 포함하고 `viewer.html?embed=lab`에 앱을 표시합니다. 기존 `lab-shell.js`와 `lab-shell.css`는 공개 저장소에서 함께 유지합니다. 언어 메시지는 같은 출처의 부모·자식 창만 허용합니다. 빌드는 `/brain-lab/about_brain/`를 기준 경로로 사용하므로 JavaScript, 3D 모델, Draco와 섬유 자료가 같은 경로에서 로드됩니다. 출처·라이선스 파일도 함께 배포합니다. 기존 연구실 사이트와 GitHub Pages의 `main` 루트 배포 설정을 유지하며, 기본 `npm run build`는 로컬 검토용 루트 경로 빌드입니다.
-
-일반 정적 호스팅에서 빌드 명령은 `npm run build`, 출력 폴더는 `dist`입니다. 별도 백엔드·데이터베이스·비밀키가 필요하지 않습니다. Draco `.wasm` 파일을 `application/wasm`으로 제공해야 합니다. `index.html`의 `noindex`는 검색 노출 억제 요청일 뿐, 접근 제한이나 비공개 보장을 제공하지 않습니다.
-
-섬유 자료의 `.bin.gz`는 압축된 파일 자체를 전달하며 앱이 해시 검증 후 압축을 풉니다. 파일을 미리 압축 해제하거나 원래 압축을 HTTP `Content-Encoding`으로 지정하지 마세요. HTTPS 또는 localhost와 `DecompressionStream`을 지원하는 최신 브라우저가 필요합니다. 초기 전체 개요는 약 634 KB이며 선택한 다발의 정밀 자료를 추가로 불러옵니다.
