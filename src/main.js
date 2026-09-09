@@ -470,5 +470,20 @@ async function start() {
   }
 }
 window.addEventListener('pagehide', () => scene?.dispose(), { once: true });
+if (window.parent !== window && new URLSearchParams(location.search).get('embed') === 'lab') {
+  document.body.dataset.labEmbedded = 'true';
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent || event.origin !== location.origin || event.data?.type !== 'brainlab-language') return;
+    if (!['ko', 'en'].includes(event.data.language)) return;
+    setLanguage(event.data.language);
+    if (connectome) { sync(); renderCategories(); renderList(); renderInspector(); }
+    localize();
+  });
+  const notifySize = () => window.parent.postMessage({ type: 'brain-atlas-size', height: document.body.scrollHeight }, location.origin);
+  const observer = new ResizeObserver(notifySize);
+  observer.observe(document.body);
+  window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
+  window.parent.postMessage({ type: 'brain-atlas-ready' }, location.origin);
+}
 localize();
 start();

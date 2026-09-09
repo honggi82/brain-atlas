@@ -4,7 +4,7 @@
 
 **웹에서 사용:** [Brain Atlas 열기](https://honggi82.github.io/brain-lab/about_brain/). 설치하거나 개인 컴퓨터에서 서버를 실행할 필요가 없습니다. GitHub 원본 소스 저장소는 비공개로 유지하며, 웹 실행용 빌드와 공개 자료는 연구실 사이트 저장소에서 제공합니다.
 
-상단의 **Kr / En**으로 화면과 기능 설명의 언어를 선택합니다. Kr에서는 `해마 (Hippocampus)`처럼 영어를 괄호로 병기합니다. 단순 직역 대신 해부학 명칭을 사용하며, `중심전회` 같은 임상 동의어로도 검색할 수 있습니다. [용어 표기 기준](public/TERMINOLOGY.md)을 참고하세요.
+공개 사이트에서는 연구실 공통 메뉴의 **KR / EN**으로 메뉴와 앱의 언어를 함께 선택합니다. 언어를 바꿔도 선택한 구조·경로가 유지되며 앱 내부의 중복 언어 버튼은 숨깁니다. 로컬 단독 실행에서는 앱의 **Kr / En**을 사용합니다. Kr에서는 `해마 (Hippocampus)`처럼 영어를 괄호로 병기합니다. 단순 직역 대신 해부학 명칭을 사용하며, `중심전회` 같은 임상 동의어로도 검색할 수 있습니다. [용어 표기 기준](public/TERMINOLOGY.md)을 참고하세요.
 
 이번 개선본은 **원본 HCP streamline을 이용한 섬유 추적 보기**와 **표시 제어를 통합한 왼쪽 계층형 목록**을 제공합니다. 이전 검토본은 이 컴퓨터의 `../brain-atlas` 폴더에 그대로 보존되어 있습니다. 개선본은 `brain-atlas-v2/Start.cmd`로 실행하세요.
 
@@ -86,7 +86,7 @@ npm run build
 
 2026-09-10 소유자의 요청으로 주 사용 주소를 **https://honggi82.github.io/brain-lab/about_brain/** 으로 옮겼습니다. 연구실 사이트의 `뇌 해부도 / Brain Atlas` 메뉴로 접속하며, 로그인은 필요하지 않습니다. 개발 소스 저장소 `honggi82/brain-atlas`는 비공개로 유지합니다.
 
-GitHub Pages용 빌드는 `npm run build:pages`로 생성합니다. `dist-pages/` 안의 파일만 `honggi82/brain-lab` 저장소의 `about_brain/`에 배치합니다. 이 빌드는 `/brain-lab/about_brain/`를 기준 경로로 사용하므로 JavaScript, 3D 모델, Draco와 섬유 자료가 같은 경로에서 로드됩니다. 출처·라이선스 파일도 함께 배포합니다. 기존 연구실 사이트의 파일은 유지하며 GitHub Pages의 `main` 루트 배포 설정을 사용합니다. 기본 `npm run build`는 로컬 검토용 루트 경로 빌드를 그대로 제공합니다.
+GitHub Pages용 빌드는 `npm run build:pages`로 생성한 뒤 `python scripts/integrate-lab.py <brain-lab-checkout>`로 연구실 사이트에 통합합니다. `about_brain/index.html`은 연구실 메뉴를 포함하고 `viewer.html?embed=lab`에 앱을 표시합니다. 기존 `lab-shell.js`와 `lab-shell.css`는 공개 저장소에서 함께 유지합니다. 언어 메시지는 같은 출처의 부모·자식 창만 허용합니다. 빌드는 `/brain-lab/about_brain/`를 기준 경로로 사용하므로 JavaScript, 3D 모델, Draco와 섬유 자료가 같은 경로에서 로드됩니다. 출처·라이선스 파일도 함께 배포합니다. 기존 연구실 사이트와 GitHub Pages의 `main` 루트 배포 설정을 유지하며, 기본 `npm run build`는 로컬 검토용 루트 경로 빌드입니다.
 
 일반 정적 호스팅에서 빌드 명령은 `npm run build`, 출력 폴더는 `dist`입니다. 별도 백엔드·데이터베이스·비밀키가 필요하지 않습니다. Draco `.wasm` 파일을 `application/wasm`으로 제공해야 합니다. `index.html`의 `noindex`는 검색 노출 억제 요청일 뿐, 접근 제한이나 비공개 보장을 제공하지 않습니다.
 

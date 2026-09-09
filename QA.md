@@ -1,5 +1,15 @@
 # Verification — 2026-09-10
 
+## Shared lab navigation and language selection
+
+- Published public lab commit `dc6be00561ee02687c50344c65afa3997b9ac53b`; GitHub Pages reports `built`. All 10 lab headers now use `연구 분야 / Research Areas`, followed immediately by `뇌 해부도 / Brain Atlas`, then `교수 / Professor`.
+- The existing `/brain-lab/about_brain/` URL now retains the lab header and displays the atlas below it. The active tab is marked and the mobile menu remains available. The app runs in a same-origin frame so the two interfaces retain their own styles. Header height is measured to prevent overlap; the mobile frame expands with content.
+- Only the lab menu's language control is visible in the embedded app. Same-origin, parent/child-checked messages change app language without reloading or clearing selection. The original standalone/local app retains its own language control. The shared language loader resolves relative to its script URL, so it also works from the nested page.
+- `npm.cmd run check` passed for 17 JavaScript files, `npm.cmd test` passed **20/20**, and the Pages production build passed with the retained scene chunk advisory. Modified lab scripts passed `node --check`; integration and browser-test Python files passed compilation. Korean UTF-8 was reread and original edited-file newline styles were preserved.
+- Both `python -X utf8 tests/pages-smoke.py --site-dir ../.brain-atlas-pages` and `python -X utf8 tests/pages-smoke.py --url https://honggi82.github.io/brain-lab/` passed. Tests cover menu ordering and Korean/English labels at 1536 pixels; complete atlas flows at **1280 × 720** and **390 × 844**; hidden duplicate language controls; preservation of selected Broca references during language changes; persistent language after reload and a round trip to Professor; header separation; downloads; and the slashless URL. No failed same-origin responses or captured page errors remained. Browser and temporary servers closed in `finally`.
+- The first new test used an ambiguous `data-mode` selector matching both body and button; it was corrected to select the mode button. A separate mobile check caught a fixed header offset mismatch; layout now measures the actual header height instead of assuming a constant. Desktop/mobile screenshots `test-results/lab-shell-1280.png` and `test-results/lab-shell-390.png` were visually inspected.
+- Source and lab-file backups have suffix `.bak-20260910-shell`, including `src/main.js.bak-20260910-shell` and `../.brain-atlas-pages/index.html.bak-20260910-shell`. The previous standalone public index is preserved outside publication at `test-results/pages-index.html.bak-20260910-shell`. Backups are excluded from Git and deployment. The existing in-app tab handoff returned `queued`; the public URL was independently verified above.
+
 ## GitHub Pages migration
 
 - The current app URL is **https://honggi82.github.io/brain-lab/about_brain/**. GitHub Pages reports `built` for public `brain-lab` commit `d0e8e4362a14d0803cdc71fc6204ef7ba2947d22`. The existing Pages configuration (`main`, repository root, `.nojekyll`) is unchanged.
