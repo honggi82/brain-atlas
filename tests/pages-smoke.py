@@ -110,7 +110,7 @@ try:
                     control.locator(f'[data-language="{language}"]').click()
                     assert frame.locator('#scene-host').get_attribute('data-selected-function') == 'broca'
                 frame.locator('.modes [data-mode="anatomy"]').click()
-                verify_unified(control)
+                verify_unified(control, Path(__file__).resolve().parents[1] / 'test-results' if args.site_dir else None)
                 frame_box = page.locator('#atlas-frame').bounding_box()
                 header_box = page.locator('.site-header').bounding_box()
                 page.evaluate('window.scrollTo({top: 0, behavior: "instant"})')
@@ -118,7 +118,7 @@ try:
                 assert page.locator('#atlas-frame').bounding_box()['y'] >= header_box['height'], (width, page.locator('#atlas-frame').bounding_box(), header_box)
                 if args.site_dir:
                     page.screenshot(path=str(Path(__file__).resolve().parents[1] / 'test-results' / f'lab-shell-{width}.png'))
-                for path in ['ATTRIBUTION.md', 'TERMINOLOGY.md', 'ANATOMY_REVIEW.md', 'draco/draco_decoder.wasm', 'data/tract_to_region_connectome_MMP.xlsx']:
+                for path in ['ATTRIBUTION.md', 'TERMINOLOGY.md', 'ANATOMY_REVIEW.md', 'draco/draco_decoder.wasm', 'data/tract_to_region_connectome_MMP.xlsx', 'functional/manifest.json', 'functional/cortex.bin', 'functional/METHODS.md', 'functional/LICENSE.txt', 'functional/build-functional.py']:
                     response = context.request.get(url + 'about_brain/' + path)
                     assert response.status == 200, (path, response.status)
                 page.goto(url + 'about_brain', wait_until='domcontentloaded')

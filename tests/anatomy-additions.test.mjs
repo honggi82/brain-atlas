@@ -29,16 +29,14 @@ test('two source-labelled insulae retain valid geometry, laterality and a deeper
   }
 });
 
-test('functional references resolve existing anatomical labels and respect the selected hemisphere', () => {
-  for (const area of FUNCTIONAL_AREAS) {
-    assert.ok(area.scope && area.scopeEn && area.source.url.startsWith('https://'));
-    for (const side of ['left', 'right']) {
-      const references = functionalParts(parts, area, side);
-      assert.equal(references.length, area.labels.length, area.id);
-      assert.ok(references.every(p => p.side === side));
-    }
+test('whole hippocampal geometry respects hemispheres; cortical functions do not select old gyral references', () => {
+  const hippocampus = FUNCTIONAL_AREAS.find(a => a.id === 'hippocampus');
+  for (const side of ['left', 'right']) {
+    const references = functionalParts(parts, hippocampus, side);
+    assert.equal(references.length, 1);
+    assert.equal(references[0].side, side);
+    assert.equal(references[0].label, 'Hippocampus');
   }
-  const broca = FUNCTIONAL_AREAS.find(a => a.id === 'broca');
-  assert.ok(functionalParts(parts, broca, 'both').every(p => p.side === 'left'));
-  assert.deepEqual(new Set(functionalParts(parts, FUNCTIONAL_AREAS.find(a => a.id === 'hippocampus'), 'both').map(p => p.side)), new Set(['left', 'right']));
+  assert.deepEqual(new Set(functionalParts(parts, hippocampus, 'both').map(p => p.side)), new Set(['left', 'right']));
+  for (const area of FUNCTIONAL_AREAS.filter(a => a.id !== 'hippocampus')) assert.deepEqual(functionalParts(parts, area, 'both'), []);
 });

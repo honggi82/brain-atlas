@@ -18,7 +18,7 @@
 
 `변연엽 (Limbic lobe)`과 `변연계 (Limbic system)`는 모두 쓰는 용어입니다. 변연엽은 안쪽면의 띠이랑·해마곁이랑 등 피질의 해부학적 묶음이며, 변연계는 해마·편도체·시상하부 등을 포함하는 더 넓은 구조와 연결의 개념입니다. 현재 색상 범례는 원본 피질 분류이므로 변연엽으로 표시하며 변연계 전체라는 뜻으로 쓰지 않습니다.
 
-기능 탐색에는 `보완운동영역 (Supplementary motor area, SMA)`, `전운동피질 (Premotor cortex)`, `브로카 영역 (Broca's area)`, `베르니케 영역 (Wernicke's area)`, `해마 (Hippocampus)`를 사용합니다. SMA의 보조운동영역, 전운동피질의 운동앞피질 등 동의어가 존재합니다. 운동·언어 영역의 기능 경계를 이랑 전체와 동일시하지 않으며, 화면에 참조 구조의 범위를 명시합니다.
+기능 탐색에는 일차운동피질 (Primary motor cortex), 일차체성감각피질 (Primary somatosensory cortex), 일차시각피질 (Primary visual cortex), 일차청각피질 (Primary auditory cortex) 등을 포함한 22개 항목이 있습니다. 한국어에서는 영어를 괄호 안에 병기하고 영어에서는 해당 영어 명칭을 사용합니다. SMA의 보조운동영역, 전운동피질의 운동앞피질 등 동의어는 검색 별칭으로 유지합니다. 베르니케는 단일 경계로 확정하지 않고 `베르니케 관련 뒤쪽 언어영역 (Wernicke-related posterior language regions)`으로 표기합니다. 화면의 HCP 구획 ID는 번역하지 않으며 기능 명칭과 구획의 포함 관계를 설명합니다.
 
 `Base of peduncle`은 대뇌다리바닥입니다. 원본의 `cerebellum` 분류를 `brainstem`으로 수정했고 원본 분류는 `sourceCategory`에 보존했습니다. FIPAT TA2에서 해당 항목은 중뇌의 cerebral peduncle 아래에 속합니다.
 

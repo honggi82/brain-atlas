@@ -7,6 +7,7 @@ import { CATEGORIES } from './knowledge.js';
 import { partName, ui } from './i18n.js';
 import { createTractLayer } from './tract-layer.js';
 import { lobeForPart } from './lobes.js';
+import { createFunctionalLayer } from './functional-layer.js';
 
 export async function createScene(host, parts, callbacks, fiberManifest) {
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
@@ -47,6 +48,7 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
   const meshes = new Map();
   const partMap = new Map(parts.map(p => [p.id, p]));
   let disposed = false, dirty = true, frame, current, loaded = false, fiberMode = false;
+  let functional;
   let fullBox, front = new T.Vector3(0, 0, 1), left = new T.Vector3(1, 0, 0);
   const raycaster = new T.Raycaster();
   const pointer = new T.Vector2();
@@ -87,13 +89,14 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
   }
 
   function selectedPieces(id) {
+    if (functional?.root.visible) return functional.selected();
     if (current?.selectedFunction) return [...meshes.entries()].filter(([id]) => current.referenceIds.has(id)).flatMap(([, pieces]) => pieces);
     return current?.selectedLobe
       ? [...meshes.entries()].filter(([key]) => lobeForPart(partMap.get(key))?.id === current.selectedLobe).flatMap(([, pieces]) => pieces)
       : meshes.get(id);
   }
 
-  function fit(box = fiberMode ? fibers.bounds() : fullBox, direction) {
+  function fit(box = fiberMode ? fibers.bounds() : functional?.root.visible ? functional.bounds() : fullBox, direction) {
     if (!box || box.isEmpty()) return;
     const center = box.getCenter(new T.Vector3());
     const vertical = T.MathUtils.degToRad(camera.fov / 2);
@@ -115,13 +118,16 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
   function update(state) {
     current = state;
     const previousMode = fiberMode;
+    const previousFunctional = functional.root.visible;
     fiberMode = state.mode === 'tractography' && state.representation === 'streamlines';
-    model.visible = !fiberMode;
+    functional.update(state);
+    model.visible = !fiberMode && !functional.root.visible;
     scene.background = fiberMode ? new T.Color('#101b25') : null;
     fibers.update(state);
-    host.dataset.renderer = fiberMode ? 'streamlines' : 'anatomy';
+    host.dataset.renderer = fiberMode ? 'streamlines' : functional.root.visible ? 'functional' : 'anatomy';
+    host.dataset.functionalParcels = functional.selected().map(m => `${m.userData.side}:${m.userData.name}`).join(',');
     if (!fiberMode) { host.dataset.visibleFibers = 0; host.dataset.visibleFiberBundles = 0; }
-    if (previousMode !== fiberMode) view('oblique');
+    if (previousMode !== fiberMode || previousFunctional !== functional.root.visible) view('oblique');
     canvas.setAttribute('aria-label', ui('뇌 3D 해부도. 드래그로 회전, 휠로 확대, 구조를 클릭해 선택합니다.'));
     for (const [id, pieces] of meshes) {
       const part = partMap.get(id);
@@ -145,7 +151,7 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
         mesh.renderOrder = active ? 2 : opacity < 0.95 ? 1 : 0;
       }
     }
-    host.dataset.visibleStructures = fiberMode ? 0 : [...meshes.values()].filter(pieces => pieces.some(m => m.visible)).length;
+    host.dataset.visibleStructures = fiberMode ? 0 : functional.root.visible ? functional.selected().length : [...meshes.values()].filter(pieces => pieces.some(m => m.visible)).length;
     host.dataset.selectedLobe = state.selectedLobe || '';
     host.dataset.selectedFunction = state.selectedFunction || '';
     host.dataset.selectedStructures = fiberMode ? 0 : (selectedPieces(state.selected) || []).filter(m => m.visible).reduce((ids, m) => ids.add(m.userData.nodeId), new Set()).size;
@@ -157,6 +163,7 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
     pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, 1 - (event.clientY - rect.top) / rect.height * 2);
     raycaster.setFromCamera(pointer, camera);
     if (fiberMode) return fibers.pick(raycaster);
+    if (functional.root.visible) return functional.pick(raycaster);
     const targets = [...meshes.values()].flat().filter(m => m.visible && m.material.opacity > 0.2);
     return raycaster.intersectObjects(targets, false)[0]?.object.userData.nodeId;
   }
@@ -168,15 +175,15 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
     canvas.style.cursor = id == null ? 'grab' : 'pointer';
     hover.hidden = id == null;
     if (id != null) {
-      const part = fiberMode ? fiberManifest.bundles.find(b => b.id === id) : partMap.get(id);
-      const lobe = !fiberMode && lobeForPart(part);
+      const part = functional.root.visible ? { ko: id.name, en: id.name, side: id.side } : fiberMode ? fiberManifest.bundles.find(b => b.id === id) : partMap.get(id);
+      const lobe = !fiberMode && !functional.root.visible && lobeForPart(part);
       hover.textContent = `${partName(part)}${lobe ? ` · ${partName(lobe)}` : ''}`;
       const rect = canvas.getBoundingClientRect();
       hover.style.left = `${Math.min(host.clientWidth - 170, Math.max(8, e.clientX - rect.left + 12))}px`;
       hover.style.top = `${Math.max(8, e.clientY - rect.top - 34)}px`;
     }
   };
-  const up = e => { if (tap.up(e.pointerId, e.clientX, e.clientY) && loaded) { const id = pick(e); if (id != null) { if (fiberMode) callbacks.onFiberSelect(id); else callbacks.onSelect(id); } } };
+  const up = e => { if (tap.up(e.pointerId, e.clientX, e.clientY) && loaded) { const id = pick(e); if (id != null) { if (fiberMode) callbacks.onFiberSelect(id); else if (!functional.root.visible) callbacks.onSelect(id); } } };
   const cancel = e => tap.cancel(e.pointerId);
   const leave = () => { hover.hidden = true; };
   const listeners = { pointerdown: down, pointermove: move, pointerup: up, pointercancel: cancel, pointerleave: leave };
@@ -211,6 +218,8 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
       mesh.userData.bx_id = part.id;
       gltf.scene.add(mesh);
     }
+    functional = await createFunctionalLayer();
+    scene.add(functional.root);
     model.add(gltf.scene);
     gltf.scene.updateMatrixWorld(true);
     const core = new T.Box3();
@@ -259,10 +268,10 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
   } catch (error) { dispose(); throw error; }
 
   function view(view) {
-    const anterior = fiberMode ? new T.Vector3(0, 0, -1) : front;
-    const lateral = fiberMode ? new T.Vector3(-1, 0, 0) : left;
+    const anterior = fiberMode || functional?.root.visible ? new T.Vector3(0, 0, -1) : front;
+    const lateral = fiberMode || functional?.root.visible ? new T.Vector3(-1, 0, 0) : left;
     const dirs = { front: anterior, back: anterior.clone().negate(), left: lateral, right: lateral.clone().negate(), top: new T.Vector3(0, 1, 0.001), oblique: anterior.clone().addScaledVector(lateral, 1.4).add(new T.Vector3(0, 0.35, 0)).normalize() };
-    fit(fiberMode ? fibers.bounds() : fullBox, dirs[view] || dirs.oblique);
+    fit(fiberMode ? fibers.bounds() : functional?.root.visible ? functional.bounds() : fullBox, dirs[view] || dirs.oblique);
   }
 
   return {

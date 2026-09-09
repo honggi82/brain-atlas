@@ -6,7 +6,7 @@ import { connectionsForTract, connectionsForRegion, percent } from './connectome
 import { getLanguage, setLanguage, localize, ui, partName, partSummary, regionName } from './i18n.js';
 import { makeCatalogue, bundleForTract } from './streamlines.js';
 import { LOBES, lobeForPart, partsInLobe } from './lobes.js';
-import { FUNCTIONAL_AREAS, functionalParts } from './functional.js';
+import { FUNCTIONAL_AREAS, FUNCTIONAL_GROUPS, functionalParts } from './functional.js';
 
 const icon = (name, size = 20) => {
   const paths = {
@@ -90,13 +90,16 @@ function sync() {
   scene?.update(state);
   const functional = FUNCTIONAL_AREAS.find(f => f.id === state.selectedFunction);
   $('#functional-library').hidden = state.mode !== 'anatomy';
-  $('#functional-library').innerHTML = `<h2>${ui('기능 탐색')}</h2><div>${FUNCTIONAL_AREAS.map(f => `<button data-functional="${f.id}" aria-pressed="${state.selectedFunction === f.id}">${escape(getLanguage() === 'en' ? f.short : f.ko)}</button>`).join('')}</div>`;
+  renderFunctionalLibrary();
+  const nativeFunctional = Boolean(functional?.parcels.length);
+  document.body.dataset.functionalView = nativeFunctional;
+  if (state.mode === 'anatomy') $('#stage-kicker').textContent = nativeFunctional ? 'HCP-MMP1.0 · S1200 CORTEX' : 'HUMAN NEUROANATOMY';
   const lobe = state.mode === 'anatomy' ? LOBES.find(l => l.id === state.selectedLobe) : null;
   const part = functional || lobe || (fiberView ? bundles.find(b => b.id === state.fiber) : parts.find(p => p.id === state.selected));
   $('.floating-label').hidden = !part;
-  $('#floating-name').textContent = part ? `${partName(part)} · ${functional ? ui('참조 해부구조') : sideName(lobe ? state.hemisphere : part.side)}` : '';
+  $('#floating-name').textContent = part ? `${partName(part)} · ${functional ? sideName(state.hemisphere) : sideName(lobe ? state.hemisphere : part.side)}` : '';
   $('#floating-en').textContent = !lobe && !fiberView && lobeForPart(part) ? partName(lobeForPart(part)) : '';
-  $('#lobe-legend').hidden = state.mode !== 'anatomy';
+  $('#lobe-legend').hidden = state.mode !== 'anatomy' || nativeFunctional;
   $('#lobe-legend').innerHTML = LOBES.map(l => `<button data-lobe="${l.id}" aria-pressed="${l.id === state.selectedLobe}" title="${escape(partSummary(l))}">${lobeSwatch(l)}${escape(partName(l))}</button>`).join('');
   $('#opacity').value = Math.round((1 - state.opacity) * 100);
   $('#opacity-value').textContent = `${$('#opacity').value}%`;
@@ -199,9 +202,21 @@ function selectPart(id, focus = false) {
   if (focus) scene?.focus(id);
 }
 
+function renderFunctionalLibrary() {
+  const en = getLanguage() === 'en', query = state.query.trim().toLocaleLowerCase();
+  const areas = FUNCTIONAL_AREAS.filter(f => [f.ko, f.en, f.short, f.aliases, ...f.parcels].join(' ').toLocaleLowerCase().includes(query));
+  const scroll = $('#functional-library .functional-topics')?.scrollTop || 0;
+  $('#functional-library').innerHTML = `<h2>${ui('기능 탐색')} <span>${areas.length} / ${FUNCTIONAL_AREAS.length}</span></h2><div class="functional-topics">${FUNCTIONAL_GROUPS.map(group => {
+    const children = areas.filter(f => f.group === group.id);
+    return children.length ? `<section><h3>${escape(en ? group.en : group.ko)}</h3>${children.map(f => `<button data-functional="${f.id}" aria-pressed="${state.selectedFunction === f.id}">${escape(partName(f))}</button>`).join('')}</section>` : '';
+  }).join('')}</div>`;
+  $('#functional-library .functional-topics').scrollTop = scroll;
+}
+
 function selectFunctional(id) {
   const area = FUNCTIONAL_AREAS.find(f => f.id === id);
   if (!area) return;
+  if (state.selectedFunction !== id) state.hemisphere = area.defaultSide;
   const references = functionalParts(parts, area, state.hemisphere);
   state.selectedFunction = id; state.referenceIds = new Set(references.map(p => p.id));
   state.selectedLobe = null; state.selected = null; state.isolate = false; state.opacity = 0.12;
@@ -211,16 +226,25 @@ function selectFunctional(id) {
     const lobe = lobeForPart(p); if (lobe) state.lobeExpanded.add(lobe.id);
   }
   sync(); renderList(); renderInspector(); localize();
-  const side = state.hemisphere === 'both' ? area.defaultSide : state.hemisphere;
+  const side = state.hemisphere;
   const view = area.view === 'medial' ? (side === 'right' ? 'left' : 'right') : area.view === 'lateral' ? side : 'oblique';
   scene?.view(view);
-  $('#view-tag').textContent = ui(area.view === 'medial' ? '안쪽면 참조 보기' : '기능 영역 참조 보기');
+  document.querySelectorAll('[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === view));
+  $('#view-tag').textContent = area.parcels.length ? `${sideName(side)} · HCP-MMP1.0` : ui('기능 영역 참조 보기');
 }
 
 function renderFunctionalInspector(area) {
   const en = getLanguage() === 'en';
   const references = functionalParts(parts, area, state.hemisphere);
   $('#inspector-content').innerHTML = `<div class="detail-kicker">${ui('기능 탐색')}<span>${sideName(state.hemisphere === 'both' ? area.defaultSide : state.hemisphere)}</span></div><h2 class="detail-name">${escape(partName(area))}</h2><h3>${ui('대표 위치')}</h3><p class="lobe-location">${escape(en ? area.locationEn : area.location)}</p><h3>${ui('주요 기능')}</h3><p class="summary">${escape(partSummary(area))}</p><p class="method-note functional-scope">${escape(en ? area.scopeEn : area.scope)}</p><h3>${ui('참조 해부구조')}</h3><p class="method-note">${ui('강조 색은 아래 참조 구조의 전체 형상입니다. 기능 활성도나 정확한 기능 경계를 뜻하지 않습니다.')}</p><div class="functional-references">${references.map(p => `<button data-part="${p.id}">${escape(partName(p))} · ${sideName(p.side)}</button>`).join('')}</div><div class="selection-actions"><button id="focus-part">${icon('focus', 16)} ${ui('가까이')}</button><button id="isolate-part" aria-pressed="${state.isolate}">${ui('단독 보기')}</button></div><div class="detail-source"><span>${ui('설명 출처')}</span><a href="${area.source.url}" target="_blank" rel="noreferrer">${area.source.title} ↗</a></div>`;
+  $('.detail-kicker span').textContent = sideName(state.hemisphere);
+  if (area.parcels.length) {
+    const references = $('.functional-references');
+    references.previousElementSibling.textContent = en ? 'Orange: selected parcels. Gray: matching cortical context. Adjust transparency to see cortex buried in sulci.' : '주황색은 선택 구획, 회색은 같은 자료의 주변 피질입니다. 고랑 안쪽 영역은 피질 투명도를 높여 확인하세요.';
+    references.previousElementSibling.previousElementSibling.textContent = en ? 'Displayed atlas parcels' : '표시한 아틀라스 구획';
+    references.innerHTML = area.parcels.map(p => `<span class="parcel-chip">${escape(p)}</span>`).join('');
+    $('.detail-source').insertAdjacentHTML('beforeend', `<a href="functional/METHODS.md" target="_blank">${en ? 'Surface, boundaries & source data' : '표면·경계·원본 자료'} ↗</a>`);
+  }
 }
 
 function renderInspector() {
@@ -354,7 +378,7 @@ function setMode(mode) {
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === 'oblique'));
 }
 
-$('#search').addEventListener('input', e => { state.query = e.target.value; renderList(); localize(); });
+$('#search').addEventListener('input', e => { state.query = e.target.value; renderFunctionalLibrary(); renderList(); localize(); });
 $('#opacity').addEventListener('input', e => { state.opacity = 1 - Number(e.target.value) / 100; sync(); });
 $('#app').addEventListener('click', event => {
   const b = event.target.closest('button'); if (!b) return;
@@ -400,6 +424,7 @@ $('#app').addEventListener('click', event => {
   if (b.id === 'retry-fibers') scene?.retryFibers();
   if (b.id === 'show-all' || b.id === 'hide-all') {
     const show = b.id === 'show-all';
+    if (state.selectedFunction) { state.selectedFunction = null; state.referenceIds.clear(); state.isolate = false; renderInspector(); }
     if (state.mode === 'tractography') state.fiberHidden = new Set(show ? [] : bundles.map(b => b.id));
     else { state.categories = new Set(show ? Object.keys(CATEGORIES) : []); state.hidden.clear(); }
     sync(); renderList();
@@ -408,7 +433,7 @@ $('#app').addEventListener('click', event => {
   if (b.id === 'isolate-part') { state.isolate = !state.isolate; sync(); renderInspector(); if (state.isolate) scene?.focus(state.selected); else scene?.view('oblique'); }
   if (b.id === 'hide-part') { if (state.selectedLobe) setLobeVisible(state.selectedLobe, false); else state.hidden.add(state.selected); state.selectedLobe = null; state.selected = null; state.isolate = false; sync(); renderList(); renderInspector(); }
   if (b.id === 'reset') { state.hemisphere = 'both'; state.category = 'all'; state.regionQuery = ''; state.threshold = 0.05; state.fiberDensity = 1; state.fiberContext = true; state.fiberHidden.clear(); if (state.mode === 'tractography') { state.fiber = 'CC'; state.tract = null; state.representation = 'streamlines'; } setMode(state.mode); renderCategories(); }
-  if (b.id === 'clear-search') { state.query = ''; state.category = 'all'; $('#search').value = ''; renderCategories(); renderList(); }
+  if (b.id === 'clear-search') { state.query = ''; state.category = 'all'; $('#search').value = ''; renderFunctionalLibrary(); renderCategories(); renderList(); }
   if (b.id === 'zoom-in') scene?.zoom(0.8);
   if (b.id === 'zoom-out') scene?.zoom(1.25);
   if (b.id === 'about' || b.id === 'credits') $('#about-dialog').showModal();
@@ -417,6 +442,9 @@ $('#app').addEventListener('click', event => {
 });
 $('#app').addEventListener('change', event => {
   const input = event.target;
+  if (state.selectedFunction && (input.dataset.lobeVisible || input.dataset.layer || input.dataset.visible)) {
+    state.selectedFunction = null; state.referenceIds.clear(); state.isolate = false; renderInspector();
+  }
   if (input.dataset.lobeVisible) { setLobeVisible(input.dataset.lobeVisible, input.checked); sync(); renderList(); }
   if (input.dataset.layer) { const layer = input.dataset.layer; if (input.checked) { state.categories.add(layer); parts.filter(p => p.category === layer).forEach(p => state.hidden.delete(p.id)); } else state.categories.delete(layer); sync(); renderList(); }
   if (input.dataset.visible) {
