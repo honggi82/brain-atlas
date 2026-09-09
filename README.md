@@ -2,7 +2,11 @@
 
 한국어 설명과 영문 명칭을 함께 제공하는 교육용 3D 뇌 해부도입니다. 별도 계정, 로그인, API 키 없이 브라우저에서 실행됩니다.
 
-**웹에서 사용:** [Brain Atlas 열기](https://honggi82.github.io/brain-lab/about_brain/viewer.html). 연구실 홈페이지 메뉴바 없이 앱만 실행됩니다. 설치하거나 개인 컴퓨터에서 서버를 실행할 필요가 없습니다. [연구실 메뉴와 함께 열기](https://honggi82.github.io/brain-lab/about_brain/)도 가능합니다. GitHub 원본 소스 저장소는 비공개로 유지하며, 웹 실행용 빌드와 공개 자료는 연구실 사이트 저장소에서 제공합니다.
+**웹에서 사용:** [Brain Atlas 열기](https://honggi82.github.io/brain-lab/about_brain/viewer.html). 설치하거나 개인 컴퓨터에서 서버를 실행할 필요 없이 실행 가능합니다.
+
+**Use online:** [Open Brain Atlas](https://honggi82.github.io/brain-lab/about_brain/viewer.html). You can use the app without installing anything or running a server on your computer.
+
+GitHub 원본 소스 저장소는 비공개로 유지하며, 웹 실행용 빌드와 공개 자료는 연구실 사이트 저장소에서 제공합니다.
 
 독립 실행 화면과 로컬 실행에서는 앱의 **Kr / En**을 사용합니다. 연구실 메뉴와 함께 여는 화면에서는 공통 메뉴의 **KR / EN**으로 메뉴와 앱의 언어를 함께 선택하며 앱 내부의 중복 언어 버튼은 숨깁니다. 언어를 바꿔도 선택한 구조·경로가 유지됩니다. Kr에서는 `해마 (Hippocampus)`처럼 영어를 괄호로 병기합니다. 단순 직역 대신 해부학 명칭을 사용하며, `중심전회` 같은 임상 동의어로도 검색할 수 있습니다. [용어 표기 기준](public/TERMINOLOGY.md)을 참고하세요.
 
