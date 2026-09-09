@@ -1,5 +1,14 @@
 # Verification — 2026-09-09
 
+## Public website deployment
+
+- Published successfully to **https://honggi82-brain-atlas.honggi82.chatgpt.site** with Sites access set to `public`. The app has no sign-in feature. GitHub remains private.
+- `python -X utf8 tests/public-smoke.py https://honggi82-brain-atlas.honggi82.chatgpt.site` passed in fresh, anonymous Chromium contexts at **1280 × 720** and **390 × 844**. Both loaded all 325 anatomical identities, displayed the seven legend groups, selected 42 frontal structures, switched to English, loaded 2,000 corpus-callosum streamlines, and displayed 67 arcuate-connectome rows. No page errors or horizontal overflow were detected. Browsers closed in `finally`.
+- `npm.cmd run check` passed for 15 JavaScript files and UTF-8 text; `npm.cmd test` passed **18/18**. `npm.cmd run build` passed with the retained scene-size advisory. The runtime source was published from `5cf9d425d9a662b31bd75ba3e54e0b5358c8ef2c`; subsequent repository changes only document the final URL and results.
+- The initial provisional URL had a TLS error while publication was pending. The service's final successful deployment response assigned the URL above; anonymous HTTPS verification used that exact URL without disabling certificate checks or supplying an access token.
+- The Sites build wrapper failed to locate npm's CLI on this Windows environment; the existing `npm.cmd run build` succeeded. The Node staging helper exited with native status `0xC0000409` without a JavaScript diagnostic. Packaging used a local Python implementation of the same static archive contract: validated `dist/index.html`, regular asset files, project-contained paths and the hosting manifest, with no runtime bindings, source tree, Git history or dependencies in the archive. The Sites service accepted and deployed the archive.
+- Temporary source credentials were entered through non-echoing input and supplied to Git only through per-process environment configuration; no credentials were persisted in files, remote URLs or Git configuration. Local preparation folders were removed after their resolved paths were verified. No local application server is required for this public website.
+
 ## Lobe labels and descriptions
 
 - Shared lobe metadata now drives mesh colours, the stage legend, cortical subgroups and bilingual location/function descriptions. All 128 cortical structures belong to exactly one source-derived group; source meshes and original part metadata are unchanged.
