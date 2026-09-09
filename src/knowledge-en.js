@@ -15,7 +15,8 @@ Cuneus|Medial occipital cortex above the calcarine sulcus, involved in visual pr
 Hippocampus|A medial temporal structure essential to forming new episodic and declarative memories and to spatial navigation.
 Inferior occipital gyrus and sulcus|Inferior occipital cortex and its sulcal boundary participate in visual form processing.
 Inferior temporal gyrus|Ventral temporal association cortex involved in recognising complex objects and visual forms.
-Insula (Subcentral gyrus and ant. and post. sulci)|An atlas composite spanning insular and adjacent subcentral structures. The insula contributes to interoception, taste, pain and salience processing.
+Subcentral gyrus and sulci|The opercular bridge connecting the inferior ends of the precentral and postcentral gyri, with adjacent sulci. It overlies the insula and is not the insula itself.
+Insula|Deep within the lateral sulcus, covered by the frontal, parietal and temporal opercula. It contributes to interoception, taste, pain and salience processing.
 Lat Fis-ant-Horizont|The anterior horizontal ramus of the lateral sulcus separates the triangular and orbital parts of the inferior frontal gyrus.
 Lat Fis-ant-Vertical|The anterior ascending ramus of the lateral sulcus separates the opercular and triangular parts of the inferior frontal gyrus.
 Lat Fis-post|The posterior ramus of the lateral sulcus separates temporal cortex from the overlying frontal and parietal lobes; the insula lies deep to it.
@@ -194,7 +195,7 @@ export const EN_TERMS = {
   'Ventral lateroventral nucleus': 'Ventral lateroventral thalamic subdivision',
   'Globus pallidus external': 'External segment of globus pallidus',
   'Globus pallidus internal': 'Internal segment of globus pallidus',
-  'Insula (Subcentral gyrus and ant. and post. sulci)': 'Insula and subcentral gyrus/sulci (atlas composite)',
+  'Subcentral gyrus and sulci': 'Subcentral gyrus and sulci',
   'Orbital gyri (Frontomarginal gyrus and sulcus)': 'Orbital and frontomarginal gyri/sulci (atlas composite)',
   'Acoustic radiation': 'Auditory radiation',
 };
@@ -213,6 +214,8 @@ export const KO_TERMS = {
 };
 
 export const ALIASES = {
+  'Insula': '섬엽 섬피질 도엽 insular cortex',
+  'Circular sulcus of insula': '섬엽둘레고랑',
   'Precentral gyrus': '중심전회 중심앞이랑 primary motor cortex M1',
   'Postcentral gyrus': '중심후회 primary somatosensory cortex S1',
   'Angular gyrus': '각회 각이랑 angular',

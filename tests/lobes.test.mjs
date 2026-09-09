@@ -8,8 +8,8 @@ const parts = JSON.parse(fs.readFileSync(new URL('../public/models/parts.json', 
 
 test('lobe groups cover every cortical part once, preserving source regions and boundaries', () => {
   const ids = LOBES.flatMap(l => partsInLobe(parts, l.id).map(p => p.id));
-  assert.equal(ids.length, 128);
-  assert.equal(new Set(ids).size, 128);
+  assert.equal(ids.length, 130);
+  assert.equal(new Set(ids).size, 130);
   for (const part of parts) {
     assert.equal(Boolean(lobeForPart(part)), part.category === 'cortex');
     if (part.category === 'cortex') assert.equal(lobeForPart(part).region, part.region);

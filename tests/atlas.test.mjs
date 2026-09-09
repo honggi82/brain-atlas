@@ -11,17 +11,20 @@ const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url));
 const parts = JSON.parse(read('public/models/parts.json'));
 const data = JSON.parse(read('public/data/hcp-connectome.json'));
 
-test('325 anatomical identities and 174 descriptions match the pinned GLB, including multi-primitive cortex', () => {
+test('327 anatomical identities retain the pinned GLB plus two identified insula meshes', () => {
   const raw = read('public/models/brain.glb');
   assert.equal(raw.toString('ascii', 0, 4), 'glTF');
   const glb = JSON.parse(raw.toString('utf8', 20, 20 + raw.readUInt32LE(12)));
-  assert.equal(parts.length, 325);
-  assert.equal(new Set(parts.map(p => p.id)).size, 325);
-  assert.equal(new Set(parts.map(p => p.label)).size, 174);
+  assert.equal(parts.length, 327);
+  assert.equal(new Set(parts.map(p => p.id)).size, 327);
+  assert.equal(new Set(parts.map(p => p.label)).size, 175);
   for (const part of parts) {
     const node = glb.nodes.find(n => n.extras?.bx_id === part.id);
-    assert.ok(node, part.label);
-    assert.ok(glb.meshes[node.mesh].primitives.length);
+    if (!part.geometryFile) {
+      assert.ok(node, part.label);
+      assert.ok(glb.meshes[node.mesh].primitives.length);
+      assert.equal(node.extras.bx_label, part.sourceLabel);
+    }
     assert.ok(KNOWLEDGE[part.label]);
     assert.equal(part.ko, KNOWLEDGE[part.label].ko);
     assert.equal(part.summary, KNOWLEDGE[part.label].summary);
@@ -30,7 +33,9 @@ test('325 anatomical identities and 174 descriptions match the pinned GLB, inclu
   }
   const precentral = glb.nodes.find(n => n.extras?.bx_id === 284);
   assert.equal(glb.meshes[precentral.mesh].primitives.length, 2);
-  const primitiveCount = parts.reduce((sum, p) => sum + glb.meshes[glb.nodes.find(n => n.extras?.bx_id === p.id).mesh].primitives.length, 0);
+  const original = parts.filter(p => !p.geometryFile);
+  assert.equal(original.length, 325);
+  const primitiveCount = original.reduce((sum, p) => sum + glb.meshes[glb.nodes.find(n => n.extras?.bx_id === p.id).mesh].primitives.length, 0) + 2;
   assert.ok(primitiveCount > parts.length);
   console.log(`GLB: ${parts.length} structures, ${primitiveCount} render primitives`);
 });

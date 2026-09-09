@@ -1,6 +1,7 @@
 """Exercise the shipped UI in isolated headless Chromium; never control a user window."""
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from unified_flow import verify_unified
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'test-results'
@@ -44,9 +45,9 @@ def run():
                 assert page.locator('#scene-host').get_attribute('data-visible-structures') == '1'
                 page.locator('[data-side="both"]').click()
                 page.locator('[data-layer="cortex"]').check()
-                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '128'
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '130'
                 page.locator('[data-visible="122"]').uncheck()
-                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '127'
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '129'
                 assert page.locator('[data-layer="cortex"]').evaluate('(e) => e.indeterminate')
                 page.locator('[data-language="en"]').click()
                 assert page.locator('.detail-name').inner_text() == 'Hippocampus'
@@ -96,7 +97,7 @@ def run():
                 assert page.locator('.lobe-group:has([data-lobe-visible="parietal"]) [data-part]').count() == 14
                 assert page.locator('[data-part="56"]').count() == 1
                 page.locator('[data-language="ko"]').click()
-                for lobe, count in [('frontal', 42), ('parietal', 14), ('temporal', 22), ('occipital', 18), ('insula', 2), ('limbic', 12), ('boundaries', 18)]:
+                for lobe, count in [('frontal', 42), ('parietal', 14), ('temporal', 22), ('occipital', 18), ('insula', 2), ('limbic', 12), ('boundaries', 20)]:
                     page.locator(f'#lobe-legend [data-lobe="{lobe}"]').click()
                     assert page.locator('#search').input_value() == ''
                     assert page.locator('#scene-host').get_attribute('data-selected-structures') == str(count)
@@ -139,20 +140,9 @@ def run():
                 assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
                 page.locator('#scene-host').scroll_into_view_if_needed()
                 page.screenshot(path=str(OUT / f'fibres-{width}.png'))
-                page.locator('[data-mode="connectome"]').click()
-                page.wait_for_selector('#scene-host[data-fiber-state="ready"]')
-                assert page.locator('.probability-table tbody tr').count() == 67
-                page.locator('[data-representation="anatomy"]').click()
-                assert page.locator('#lobe-legend').is_hidden()
-                assert page.locator('#scene-host').get_attribute('data-renderer') == 'anatomy'
-                page.locator('[data-representation="streamlines"]').click()
-                page.locator('#search').fill('PTAT')
-                page.locator('[data-tract="L_PTAT"]').click()
-                page.wait_for_selector('#scene-host[data-fiber-state="unavailable"]')
-                assert page.locator('.floating-label').is_hidden()
-                page.locator('#fiber-all').click()
-                page.wait_for_selector('#scene-host[data-fiber-state="ready"]')
-                assert 'unavailable' not in page.locator('#fiber-status').inner_text()
+                page.locator('[data-mode="anatomy"]').click()
+                verify_unified(page, OUT)
+                page.screenshot(path=str(OUT / f'unified-{width}.png'))
                 assert not errors, errors
                 completed += 1
                 print(f'PASS: {width} x {height}; anatomy tree, side switching, bilingual state, fibres, density, cameras, whole brain, matrix and unmapped recovery', flush=True)

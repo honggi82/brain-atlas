@@ -31,13 +31,14 @@ Cingulate gyrus and sulcus (Middle anterior part)|띠이랑·띠고랑 중간앞
 Cingulate gyrus and sulcus (Middle posterior part)|띠이랑·띠고랑 중간뒤부분|띠피질의 뒤쪽 중간 영역으로 감각과 행동의 통합에 관여합니다. 기능 경계가 형상의 경계와 정확히 일치하지는 않습니다.
 Cingulate gyrus and sulcus (Posterior dorsal part)|띠이랑·띠고랑 뒤위부분|뒤띠피질 주변으로 내부 지향적 사고, 기억과 주의 전환에 관여하는 연결망에 참여합니다.
 Cingulate sulcus (Marginal part)|띠고랑 모서리부분|띠고랑이 위쪽으로 향하는 부분으로 중심곁소엽의 뒤쪽을 구분하는 표지입니다.
-Circular sulcus of insula|섬엽둘레고랑|섬엽과 이를 덮는 이마·마루·관자 덮개를 구분하는 경계입니다.
+Circular sulcus of insula|뇌섬엽둘레고랑|뇌섬엽과 이를 덮는 전두·두정·측두 덮개를 구분하는 경계입니다.
 Collateral sulcus|곁고랑|측두·후두엽 아래안쪽의 고랑으로 혀이랑·해마곁이랑과 가쪽의 방추상 영역을 구분합니다.
 Cuneus|쐐기소엽|새발톱고랑 위쪽의 안쪽 후두엽입니다. 시각 정보 처리에 참여합니다.
 Hippocampus|해마|안쪽 측두엽의 구조로 새로운 일화·서술 기억의 형성과 공간 탐색에 핵심적으로 관여합니다.
 Inferior occipital gyrus and sulcus|아래뒤통수이랑·고랑|후두엽 아래쪽의 피질과 경계입니다. 시각적 형태 정보를 처리하는 연결망에 참여합니다.
 Inferior temporal gyrus|아래관자이랑|측두엽 아래쪽의 연합피질로 복잡한 물체와 시각적 형태의 인식에 관여합니다.
-Insula (Subcentral gyrus and ant. and post. sulci)|섬엽·중심밑이랑 주변|가쪽고랑 깊은 곳의 피질과 인접 구조입니다. 섬엽은 몸속 감각, 미각, 통증 및 현저성 처리에 관여합니다.
+Subcentral gyrus and sulci|중심밑이랑·고랑|중심앞이랑과 중심뒤이랑의 아래끝을 잇는 덮개 부위와 인접 고랑입니다. 뇌섬엽 바깥쪽을 덮으며 뇌섬엽 자체가 아닙니다.
+Insula|뇌섬엽|전두·두정·측두엽의 덮개 아래, 가쪽고랑 깊은 곳에 위치합니다. 몸속 감각, 미각, 통증과 현저성 처리에 관여합니다.
 Lat Fis-ant-Horizont|가쪽고랑 앞수평가지|가쪽고랑의 앞 수평 가지로 아래이마이랑의 삼각부분과 눈확부분을 구분하는 표지입니다.
 Lat Fis-ant-Vertical|가쪽고랑 앞오름가지|가쪽고랑의 앞 오름 가지로 아래이마이랑의 덮개부분과 삼각부분을 구분합니다.
 Lat Fis-post|가쪽고랑 뒤가지|측두엽을 위쪽의 전두·두정엽과 구분하는 큰 고랑입니다. 섬엽은 이 고랑 깊은 곳에 위치합니다.

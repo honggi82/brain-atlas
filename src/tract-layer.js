@@ -62,7 +62,7 @@ export function createTractLayer(manifest, callbacks) {
     for (const bundle of manifest.bundles) {
       const active = state.fiber === bundle.id;
       const hemisphere = state.hemisphere === 'both' || ['median', 'both'].includes(bundle.side) || bundle.side === state.hemisphere;
-      const visible = hemisphere && !state.fiberHidden.has(bundle.id) && (active || state.fiberContext || !state.fiber);
+      const visible = !(state.tract && !state.fiber) && hemisphere && !state.fiberHidden.has(bundle.id) && (active || state.fiberContext || !state.fiber);
       for (const [collection, detail] of [[overview, false], [details, true]]) {
         const line = collection.get(bundle.id);
         if (!line) continue;
@@ -81,7 +81,7 @@ export function createTractLayer(manifest, callbacks) {
 
   async function requestSelected() {
     const id = state.fiber;
-    if (!id) { requestedId = null; activeRequest?.abort(); callbacks.onStatus(state.mode === 'connectome' ? 'unavailable' : 'ready'); return; }
+    if (!id) { requestedId = null; activeRequest?.abort(); callbacks.onStatus(state.tract ? 'unavailable' : 'ready'); return; }
     if (id === requestedId) return;
     requestedId = id;
     activeRequest?.abort();
@@ -109,7 +109,7 @@ export function createTractLayer(manifest, callbacks) {
     root,
     async update(next) {
       state = next;
-      root.visible = next.mode === 'tractography' || (next.mode === 'connectome' && next.representation === 'streamlines');
+      root.visible = next.mode === 'tractography' && next.representation === 'streamlines';
       if (!root.visible) { activeRequest?.abort(); requestedId = undefined; return; }
       try {
         if (!ready) callbacks.onStatus('loading');

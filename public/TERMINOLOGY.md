@@ -12,7 +12,13 @@
 
 화면 명칭은 단어별 기계 번역 대신 해부학에서 사용하는 명칭을 수록했습니다. 널판소엽을 “가느다란 소엽”, 볼록소엽을 “두 힘살 소엽”처럼 직역하지 않습니다. 한국어의 우리말 명칭과 임상에서 쓰는 한자어 명칭이 함께 존재하는 경우 검색 동의어를 제공합니다. 예를 들어 `중심전회`로 검색해도 중심앞이랑을 찾습니다. 모든 역사적 동의어를 수록한 것은 아닙니다.
 
-원자료 `label`과 `id`는 바꾸지 않고, 표시 명칭을 별도 `ko`·`en` 필드에 둡니다. `Mamillary body`는 화면에서 `Mammillary body`로 표기합니다. `Lat Fis-ant-Horizont` 같은 모델 약어는 `Anterior horizontal ramus of lateral sulcus`로 풀어 씁니다. 편도체의 `Central nucleus`처럼 맥락이 필요한 명칭에는 `amygdalar`를 명시합니다.
+원본 GLB와 manifest의 `label`·`id`는 바꾸지 않습니다. 파생 메타데이터는 원래 이름을 `sourceLabel`에 보존하고 교정 이름을 `label` 및 표시용 `ko`·`en`에 둡니다. `Mamillary body`는 화면에서 `Mammillary body`로 표기합니다. `Lat Fis-ant-Horizont` 같은 모델 약어는 `Anterior horizontal ramus of lateral sulcus`로 풀어 씁니다. 편도체의 `Central nucleus`처럼 맥락이 필요한 명칭에는 `amygdalar`를 명시합니다.
+
+`Insula`의 한국어 표시는 요청한 `뇌섬엽 (Insula)`으로 통일하고 섬엽·섬피질은 검색 동의어로 제공합니다. 기존 `Insula (Subcentral gyrus and ant. and post. sulci)` 노드 145/146은 바깥쪽 중심밑이랑·고랑 형상이어서 `중심밑이랑·고랑 (Subcentral gyrus and sulci)`으로 교정했습니다. 뇌섬엽은 BodyParts3D의 별도 좌우 형상을 보충해 표시합니다.
+
+`변연엽 (Limbic lobe)`과 `변연계 (Limbic system)`는 모두 쓰는 용어입니다. 변연엽은 안쪽면의 띠이랑·해마곁이랑 등 피질의 해부학적 묶음이며, 변연계는 해마·편도체·시상하부 등을 포함하는 더 넓은 구조와 연결의 개념입니다. 현재 색상 범례는 원본 피질 분류이므로 변연엽으로 표시하며 변연계 전체라는 뜻으로 쓰지 않습니다.
+
+기능 탐색에는 `보완운동영역 (Supplementary motor area, SMA)`, `전운동피질 (Premotor cortex)`, `브로카 영역 (Broca's area)`, `베르니케 영역 (Wernicke's area)`, `해마 (Hippocampus)`를 사용합니다. SMA의 보조운동영역, 전운동피질의 운동앞피질 등 동의어가 존재합니다. 운동·언어 영역의 기능 경계를 이랑 전체와 동일시하지 않으며, 화면에 참조 구조의 범위를 명시합니다.
 
 `Base of peduncle`은 대뇌다리바닥입니다. 원본의 `cerebellum` 분류를 `brainstem`으로 수정했고 원본 분류는 `sourceCategory`에 보존했습니다. FIPAT TA2에서 해당 항목은 중뇌의 cerebral peduncle 아래에 속합니다.
 

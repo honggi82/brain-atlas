@@ -1,0 +1,126 @@
+{
+  "repository": "ashemag/human-atlas",
+  "revision": "1c38bf35c254a891200d3cedecfd57abebe83d8d",
+  "sourceAtlasSha256": "c359f4bcd2cba90b7411d66d5e9fc04dc81294d46cd5c1e8b212c824f2e5bbee",
+  "file": "insula.bin",
+  "sha256": "f7bc0e65bb4ba84bf58bf0482daa49003087e546d59d7ac8a72eef9716f4579a",
+  "parts": [
+    {
+      "id": 1001,
+      "label": "Insula",
+      "category": "cortex",
+      "side": "left",
+      "region": "Insula",
+      "source": "BodyParts3D 4.0 / Human Atlas",
+      "sourceId": "FJ1748",
+      "fma": "FMA72978",
+      "geometryFile": "insula.bin",
+      "positions": 0,
+      "indices": 12060,
+      "vertexCount": 1005,
+      "indexCount": 5886,
+      "bounds": [
+        [
+          0.025664908811450005,
+          1.617275595664978,
+          -0.01785968989133835
+        ],
+        [
+          0.044928811490535736,
+          1.6518455743789673,
+          0.03376960754394531
+        ]
+      ],
+      "sourceChunkSha256": "1c98dae807210cc51a4abc806134727c9544155cad0cc328cf2e1ae1f954d3ff"
+    },
+    {
+      "id": 1002,
+      "label": "Insula",
+      "category": "cortex",
+      "side": "right",
+      "region": "Insula",
+      "source": "BodyParts3D 4.0 / Human Atlas",
+      "sourceId": "FJ1749",
+      "fma": "FMA72977",
+      "geometryFile": "insula.bin",
+      "positions": 35604,
+      "indices": 47532,
+      "vertexCount": 994,
+      "indexCount": 5784,
+      "bounds": [
+        [
+          -0.04494088888168335,
+          1.6173255443572998,
+          -0.017825990915298462
+        ],
+        [
+          -0.025695189833641052,
+          1.6518055200576782,
+          0.033921606838703156
+        ]
+      ],
+      "sourceChunkSha256": "1c98dae807210cc51a4abc806134727c9544155cad0cc328cf2e1ae1f954d3ff"
+    }
+  ],
+  "registration": {
+    "method": "Translation only, mean of six bilateral deep-structure bounding-box centres; no scaling or invented surface.",
+    "translationMetres": [
+      0.0006494096618759639,
+      -0.006365610079320276,
+      0.011498609386777882
+    ],
+    "anchors": [
+      [
+        49,
+        "FJ1754"
+      ],
+      [
+        50,
+        "FJ1802"
+      ],
+      [
+        325,
+        "FJ1776"
+      ],
+      [
+        326,
+        "FJ1823"
+      ],
+      [
+        122,
+        "FJ1759"
+      ],
+      [
+        123,
+        "FJ1807"
+      ]
+    ],
+    "heldOutControls": [
+      {
+        "nodeId": 173,
+        "sourceId": "FJ1767",
+        "residualMm": 0.8688089214135953
+      },
+      {
+        "nodeId": 174,
+        "sourceId": "FJ1814",
+        "residualMm": 0.8726837616300535
+      },
+      {
+        "nodeId": 247,
+        "sourceId": "FJ1773",
+        "residualMm": 0.48740236379803425
+      },
+      {
+        "nodeId": 248,
+        "sourceId": "FJ1820",
+        "residualMm": 0.4948097173559362
+      },
+      {
+        "nodeId": 340,
+        "sourceId": "FJ1778",
+        "residualMm": 0.6222611798304807
+      }
+    ]
+  }
+}

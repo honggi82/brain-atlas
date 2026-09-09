@@ -87,6 +87,7 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
   }
 
   function selectedPieces(id) {
+    if (current?.selectedFunction) return [...meshes.entries()].filter(([id]) => current.referenceIds.has(id)).flatMap(([, pieces]) => pieces);
     return current?.selectedLobe
       ? [...meshes.entries()].filter(([key]) => lobeForPart(partMap.get(key))?.id === current.selectedLobe).flatMap(([, pieces]) => pieces)
       : meshes.get(id);
@@ -114,7 +115,7 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
   function update(state) {
     current = state;
     const previousMode = fiberMode;
-    fiberMode = state.mode === 'tractography' || (state.mode === 'connectome' && state.representation === 'streamlines');
+    fiberMode = state.mode === 'tractography' && state.representation === 'streamlines';
     model.visible = !fiberMode;
     scene.background = fiberMode ? new T.Color('#101b25') : null;
     fibers.update(state);
@@ -125,27 +126,28 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
     for (const [id, pieces] of meshes) {
       const part = partMap.get(id);
       const hemisphere = state.hemisphere === 'both' || part.side === 'median' || part.side === state.hemisphere;
-      const active = state.selectedLobe ? lobeForPart(part)?.id === state.selectedLobe : id === state.selected;
+      const active = state.selectedFunction ? state.referenceIds.has(id) : state.selectedLobe ? lobeForPart(part)?.id === state.selectedLobe : id === state.selected;
       let opacity = part.category === 'cortex' || part.category === 'white_matter' ? state.opacity : 1;
       if (active) opacity = 1;
       for (const mesh of pieces) {
         mesh.visible = hemisphere && state.categories.has(part.category) && !state.hidden.has(id)
           && (!state.isolate || active)
-          && (state.mode !== 'connectome' || active || part.category === 'cortex');
+          && (state.mode !== 'tractography' || part.category === 'cortex' || (active && !state.fiberHidden.has(state.fiber)));
         mesh.material.opacity = opacity;
         mesh.material.transparent = opacity < 1;
         mesh.material.depthWrite = opacity >= 0.95;
         mesh.material.color.copy(mesh.userData.baseColor);
-        if (state.mode === 'connectome') mesh.material.color.set('#b5bcb5');
+        if (state.mode === 'tractography') mesh.material.color.set('#b5bcb5');
         mesh.material.emissive.set(active && !state.selectedLobe ? 0x246d59 : 0x000000);
         mesh.material.emissiveIntensity = active && !state.selectedLobe ? 0.3 : 0;
-        if (state.selectedLobe && !active) mesh.material.color.multiplyScalar(0.55);
-        if (active && !state.selectedLobe) mesh.material.color.set(state.mode === 'connectome' ? '#087d67' : '#82b6a1');
+        if ((state.selectedLobe || state.selectedFunction) && !active) mesh.material.color.multiplyScalar(0.55);
+        if (active && !state.selectedLobe) mesh.material.color.set(state.mode === 'tractography' ? '#087d67' : '#82b6a1');
         mesh.renderOrder = active ? 2 : opacity < 0.95 ? 1 : 0;
       }
     }
     host.dataset.visibleStructures = fiberMode ? 0 : [...meshes.values()].filter(pieces => pieces.some(m => m.visible)).length;
     host.dataset.selectedLobe = state.selectedLobe || '';
+    host.dataset.selectedFunction = state.selectedFunction || '';
     host.dataset.selectedStructures = fiberMode ? 0 : (selectedPieces(state.selected) || []).filter(m => m.visible).reduce((ids, m) => ids.add(m.userData.nodeId), new Set()).size;
     dirty = true;
   }
@@ -196,6 +198,19 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
 
   try {
     const gltf = await loader.loadAsync(`${import.meta.env.BASE_URL}models/brain.glb`, e => callbacks.onProgress(e.total ? Math.round(e.loaded / e.total * 90) : 40));
+    const supplement = await fetch(`${import.meta.env.BASE_URL}models/insula.bin`);
+    if (!supplement.ok) throw new Error(`Insula geometry: HTTP ${supplement.status}`);
+    const insulaBuffer = await supplement.arrayBuffer();
+    for (const part of parts.filter(p => p.geometryFile === 'insula.bin')) {
+      const geometry = new T.BufferGeometry();
+      geometry.setAttribute('position', new T.BufferAttribute(new Float32Array(insulaBuffer, part.positions, part.vertexCount * 3), 3));
+      geometry.setIndex(new T.BufferAttribute(new Uint32Array(insulaBuffer, part.indices, part.indexCount), 1));
+      geometry.computeVertexNormals();
+      const mesh = new T.Mesh(geometry, new T.MeshStandardMaterial());
+      mesh.name = `Insula.${part.side}`;
+      mesh.userData.bx_id = part.id;
+      gltf.scene.add(mesh);
+    }
     model.add(gltf.scene);
     gltf.scene.updateMatrixWorld(true);
     const core = new T.Box3();

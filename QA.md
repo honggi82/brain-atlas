@@ -1,5 +1,17 @@
 # Verification — 2026-09-09
 
+## Unified white matter explorer, insula correction and functional anatomy
+
+- Unified the two former white-matter modes into one explorer with a cortical-information checkbox. The actual browser flow verifies that this checkbox preserves the selected pathway, view, general search, region search and probability threshold. Native, anatomical and unresolved table-only paths remain distinct representations within the same explorer.
+- Corrected the external subcentral nodes 145/146 and added two source-labelled BodyParts3D insula meshes, resulting in 327 selection units and 175 unique names. All original 325 identities and the original GLB/manifest are preserved. See `public/ANATOMY_REVIEW.md` for the position/name audit and its limitations.
+- Added bilingual SMA, premotor, Broca, Wernicke and hippocampus exploration. The tests exercise all five buttons, reference counts, side changes and English inspector content. The interface explicitly identifies anatomical reference geometry rather than claiming exact functional boundaries.
+- `npm.cmd run check` passed for 17 JavaScript files; `npm.cmd test` passed **20/20**. Python source compilation and the production build passed. The existing Three.js scene-size advisory remains.
+- `python -X utf8 test-results/run-lobe-qa.py` passed the preserved baseline's AF/CST/OR flows and complete candidate flows at **1280 × 720** and **390 × 844**. This includes lobe/child selection, visibility, isolation, hemispheres, Kr/En, five functional entries, insula, density, cameras, the 67/180-row arcuate table, state-preserving checkbox, related tracts, and unresolved PTAT recovery. No page errors or horizontal overflow were captured. Temporary servers and browsers closed in `finally`.
+- The first candidate test incorrectly assumed that re-entering white-matter mode resets the chosen pathway to the corpus callosum. It correctly preserved the previous whole-brain state; the test now explicitly selects corpus callosum before testing the no-table case. No application assertion was weakened.
+- Milestone screenshots `test-results/insula-1280.png` and `test-results/sma-1280.png` were visually inspected. The insula is shown inside transparent covering cortex; SMA shows the stated anatomical reference, not a segmented functional region.
+- Source, test and README backups remain beside their files with suffixes `.bak-20260909-unified` and `.bak-20260909-insula`. Public data/document backups are in `test-results/insula-backups/` to prevent Vite from shipping them. All backups are excluded from Git and deployment.
+- This section records the new local verification; publication results for this change are recorded after deployment. Older sections below describe previous snapshots. Expert review, physical phones, Safari and Firefox remain untested.
+
 ## Requested Korean lobe names
 
 - Published Sites version 2 from `7cd670f07c26be980ad843ac8fd1acbf56ffedfd` at the existing public URL below. The four primary labels are now `전두엽 (Frontal lobe)`, `두정엽 (Parietal lobe)`, `후두엽 (Occipital lobe)` and `측두엽 (Temporal lobe)`. Legends, cortical groups, region labels and Korean descriptions use these names. Previous names remain searchable without appearing as lobe inspector subtitles.
