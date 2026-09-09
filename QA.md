@@ -1,5 +1,14 @@
 # Verification — 2026-09-09
 
+## Requested Korean lobe names
+
+- Published Sites version 2 from `7cd670f07c26be980ad843ac8fd1acbf56ffedfd` at the existing public URL below. The four primary labels are now `전두엽 (Frontal lobe)`, `두정엽 (Parietal lobe)`, `후두엽 (Occipital lobe)` and `측두엽 (Temporal lobe)`. Legends, cortical groups, region labels and Korean descriptions use these names. Previous names remain searchable without appearing as lobe inspector subtitles.
+- `npm.cmd run check` passed for all 15 JavaScript files; `npm.cmd test` passed **18/18**. Both touched Python tests compile. UTF-8 and newline checks passed, including regenerated metadata and terminology documentation. Exactly 30 generated anatomical summaries changed; all 325 identities and every other metadata field are preserved. The production build passed with the existing scene chunk size advisory.
+- The local browser smoke passed on both 1280 × 720 and 390 × 844, including the preserved baseline selections and the candidate's lobe/child selection, visibility, isolation, hemisphere, Kr/En, tractography and connectome flows. All temporary servers and browsers closed in `finally`.
+- `python -X utf8 tests/public-smoke.py https://honggi82-brain-atlas.honggi82.chatgpt.site` passed on both viewports with fresh anonymous contexts. Each of the four exact Korean names was checked in the legend, tree and inspector, through Kr → En → Kr. Selected group counts stayed 42, 14, 18 and 22 respectively. Native tractography and the 67-row connectome still loaded. No page errors or horizontal overflow were captured.
+- Backups of edited source, README and tests remain beside those files with suffix `.bak-20260909-lobe-terms`. Public asset backups were moved to `test-results/lobe-term-backups/` before the final build because Vite copies every public file into the deployment. The final validated archive contains 92 files and no backup files. These local backups and packaging artifacts are excluded from Git.
+- This section records the current publication; deployment and naming statements in older sections below describe previous snapshots. This change did not require new anatomy data or an additional expert medical review.
+
 ## Public website deployment
 
 - Published successfully to **https://honggi82-brain-atlas.honggi82.chatgpt.site** with Sites access set to `public`. The app has no sign-in feature. GitHub remains private.
