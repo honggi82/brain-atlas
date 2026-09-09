@@ -1,0 +1,15 @@
+Copyright (c) 2026 honggi82
+
+All rights reserved for original application code pending the owner's choice
+of a public source-code licence. This notice does not restrict rights granted
+by the separate licences of third-party code, models or derived data.
+
+In particular:
+- Anatomy geometry, derived metadata and anatomy annotations: CC BY-SA 4.0.
+- HCP1065 tract-to-region source and derived data: CC BY-SA 4.0, with the HCP
+  acknowledgement and data-use terms identified in public/ATTRIBUTION.md.
+- src/pointer-tap.js: adapted from ashemag/human-atlas under the MIT licence.
+- Three.js: MIT. Draco: Apache 2.0.
+
+See public/ATTRIBUTION.md and public/licenses/ for the original notices,
+authors, sources, licence links and descriptions of modifications.

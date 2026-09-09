@@ -1,0 +1,227 @@
+import * as T from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { PointerTap } from './pointer-tap.js';
+import { CATEGORIES } from './knowledge.js';
+import { partName, ui } from './i18n.js';
+
+export async function createScene(host, parts, callbacks) {
+  const renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setClearColor(0xf5f4f0, 0);
+  renderer.outputColorSpace = T.SRGBColorSpace;
+  renderer.toneMapping = T.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  const canvas = renderer.domElement;
+  canvas.setAttribute('aria-label', '뇌 3D 해부도. 드래그로 회전, 휠로 확대, 구조를 클릭해 선택합니다.');
+  canvas.setAttribute('role', 'img');
+  host.prepend(canvas);
+  const scene = new T.Scene();
+  const camera = new T.PerspectiveCamera(34, 1, 0.01, 100);
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.09;
+  controls.minDistance = 0.35;
+  controls.maxDistance = 18;
+  scene.add(new T.HemisphereLight(0xffffff, 0x827b71, 2.2));
+  for (const [color, intensity, xyz] of [[0xfff3df, 3, [4, 6, 5]], [0xe0edff, 2, [-4, 2, -4]]]) {
+    const light = new T.DirectionalLight(color, intensity);
+    light.position.set(...xyz);
+    scene.add(light);
+  }
+  const model = new T.Group();
+  scene.add(model);
+  const draco = new DRACOLoader().setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
+  draco.setWorkerLimit(2);
+  const loader = new GLTFLoader().setDRACOLoader(draco);
+  const meshes = new Map();
+  const partMap = new Map(parts.map(p => [p.id, p]));
+  let disposed = false, dirty = true, frame, current, loaded = false;
+  let fullBox, front = new T.Vector3(0, 0, 1), left = new T.Vector3(1, 0, 0);
+  const raycaster = new T.Raycaster();
+  const pointer = new T.Vector2();
+  const tap = new PointerTap();
+  const floating = host.querySelector('.floating-label');
+  const hover = host.querySelector('.hover-label');
+
+  function render() {
+    if (disposed) return;
+    frame = requestAnimationFrame(render);
+    controls.update();
+    if (!dirty) return;
+    renderer.render(scene, camera);
+    dirty = false;
+    const pieces = meshes.get(current?.selected);
+    if (pieces?.some(mesh => mesh.visible)) {
+      const point = bounds(pieces).getCenter(new T.Vector3()).project(camera);
+      floating.hidden = point.z > 1 || Math.abs(point.x) > 0.95 || Math.abs(point.y) > 0.94;
+      floating.style.left = `${(point.x + 1) * host.clientWidth / 2}px`;
+      floating.style.top = `${(1 - point.y) * host.clientHeight / 2}px`;
+    } else floating.hidden = true;
+  }
+  controls.addEventListener('change', () => { dirty = true; });
+  const resize = () => {
+    camera.aspect = host.clientWidth / Math.max(host.clientHeight, 1);
+    camera.updateProjectionMatrix();
+    renderer.setSize(host.clientWidth, host.clientHeight);
+    dirty = true;
+  };
+  const observer = new ResizeObserver(resize);
+  observer.observe(host);
+  resize();
+
+  function bounds(pieces) {
+    const box = new T.Box3();
+    for (const mesh of pieces) box.expandByObject(mesh);
+    return box;
+  }
+
+  function fit(box = fullBox, direction) {
+    if (!box || box.isEmpty()) return;
+    const center = box.getCenter(new T.Vector3());
+    const vertical = T.MathUtils.degToRad(camera.fov / 2);
+    const dir = direction || camera.position.clone().sub(controls.target).normalize();
+    const right = new T.Vector3().crossVectors(camera.up, dir).normalize();
+    const up = new T.Vector3().crossVectors(dir, right).normalize();
+    let distance = 0.42;
+    const boxes = box === fullBox ? [...meshes.entries()].filter(([id]) => partMap.get(id).category !== 'tracts').map(([, pieces]) => bounds(pieces)) : [box];
+    for (const target of boxes) for (const x of [target.min.x, target.max.x]) for (const y of [target.min.y, target.max.y]) for (const z of [target.min.z, target.max.z]) {
+      const offset = new T.Vector3(x, y, z).sub(center);
+      distance = Math.max(distance, offset.dot(dir) + Math.max(Math.abs(offset.dot(up)) / Math.tan(vertical), Math.abs(offset.dot(right)) / (Math.tan(vertical) * camera.aspect)) * 1.08);
+    }
+    controls.target.copy(center);
+    camera.position.copy(center).addScaledVector(dir, distance);
+    controls.update();
+    dirty = true;
+  }
+
+  function update(state) {
+    current = state;
+    canvas.setAttribute('aria-label', ui('뇌 3D 해부도. 드래그로 회전, 휠로 확대, 구조를 클릭해 선택합니다.'));
+    for (const [id, pieces] of meshes) {
+      const part = partMap.get(id);
+      const hemisphere = state.hemisphere === 'both' || part.side === 'median' || part.side === state.hemisphere;
+      const active = id === state.selected;
+      let opacity = part.category === 'cortex' || part.category === 'white_matter' ? state.opacity : 1;
+      if (active) opacity = 1;
+      for (const mesh of pieces) {
+        mesh.visible = hemisphere && state.categories.has(part.category) && !state.hidden.has(id)
+          && (!state.isolate || id === state.selected)
+          && (state.mode !== 'connectome' || active || part.category === 'cortex');
+        mesh.material.opacity = opacity;
+        mesh.material.transparent = opacity < 1;
+        mesh.material.depthWrite = opacity >= 0.95;
+        mesh.material.color.copy(mesh.userData.baseColor);
+        if (state.mode === 'connectome') mesh.material.color.set('#b5bcb5');
+        mesh.material.emissive.set(active ? 0x246d59 : 0x000000);
+        mesh.material.emissiveIntensity = active ? 0.3 : 0;
+        if (active) mesh.material.color.set(state.mode === 'connectome' ? '#087d67' : '#82b6a1');
+        mesh.renderOrder = active ? 2 : opacity < 0.95 ? 1 : 0;
+      }
+    }
+    dirty = true;
+  }
+
+  function pick(event) {
+    const rect = canvas.getBoundingClientRect();
+    pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, 1 - (event.clientY - rect.top) / rect.height * 2);
+    raycaster.setFromCamera(pointer, camera);
+    const targets = [...meshes.values()].flat().filter(m => m.visible && m.material.opacity > 0.2);
+    return raycaster.intersectObjects(targets, false)[0]?.object.userData.nodeId;
+  }
+  const down = e => { hover.hidden = true; tap.down(e.pointerId, e.clientX, e.clientY, e.pointerType === 'touch' ? 12 : 5); };
+  const move = e => {
+    tap.move(e.pointerId, e.clientX, e.clientY);
+    if (!loaded || e.buttons || e.pointerType === 'touch') { hover.hidden = true; return; }
+    const id = pick(e);
+    canvas.style.cursor = id == null ? 'grab' : 'pointer';
+    hover.hidden = id == null;
+    if (id != null) {
+      hover.textContent = partName(partMap.get(id));
+      const rect = canvas.getBoundingClientRect();
+      hover.style.left = `${Math.min(host.clientWidth - 170, Math.max(8, e.clientX - rect.left + 12))}px`;
+      hover.style.top = `${Math.max(8, e.clientY - rect.top - 34)}px`;
+    }
+  };
+  const up = e => { if (tap.up(e.pointerId, e.clientX, e.clientY) && loaded) { const id = pick(e); if (id != null) callbacks.onSelect(id); } };
+  const cancel = e => tap.cancel(e.pointerId);
+  const leave = () => { hover.hidden = true; };
+  const listeners = { pointerdown: down, pointermove: move, pointerup: up, pointercancel: cancel, pointerleave: leave };
+  for (const [name, fn] of Object.entries(listeners)) canvas.addEventListener(name, fn);
+
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    cancelAnimationFrame(frame);
+    observer.disconnect();
+    controls.dispose();
+    draco.dispose();
+    for (const [name, fn] of Object.entries(listeners)) canvas.removeEventListener(name, fn);
+    scene.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+    renderer.dispose();
+    canvas.remove();
+  }
+
+  try {
+    const gltf = await loader.loadAsync(`${import.meta.env.BASE_URL}models/brain.glb`, e => callbacks.onProgress(e.total ? Math.round(e.loaded / e.total * 90) : 40));
+    model.add(gltf.scene);
+    gltf.scene.updateMatrixWorld(true);
+    const core = new T.Box3();
+    gltf.scene.traverse(mesh => {
+      if (!mesh.isMesh) return;
+      let owner = mesh;
+      while (owner && owner.userData.bx_id == null) owner = owner.parent;
+      const ex = owner?.userData || {};
+      const part = partMap.get(ex.bx_id);
+      if (!part) { mesh.visible = false; return; }
+      if (part.category !== 'tracts') core.expandByObject(mesh);
+      const color = new T.Color(CATEGORIES[part.category].color);
+      if (part.category === 'cortex') {
+        const shades = { 'Frontal lobe': '#ca9c85', 'Parietal lobe': '#c0af88', 'Temporal lobe': '#bc9196', 'Occipital lobe': '#9faaa0' };
+        color.set(shades[part.region] || '#c2a294');
+        if (/sulcus|sulci|Lat Fis/.test(part.label) && !/gyrus|gyri/.test(part.label)) color.multiplyScalar(0.78);
+      }
+      const original = mesh.material;
+      mesh.material = new T.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0, side: T.DoubleSide });
+      original.dispose();
+      mesh.userData.nodeId = part.id;
+      mesh.userData.baseColor = color;
+      if (!meshes.has(part.id)) meshes.set(part.id, []);
+      meshes.get(part.id).push(mesh);
+    });
+    if (meshes.size !== parts.length) throw new Error(`Expected ${parts.length} structures, loaded ${meshes.size}`);
+    host.dataset.structures = meshes.size;
+    host.dataset.primitives = [...meshes.values()].reduce((count, pieces) => count + pieces.length, 0);
+    const center = core.getCenter(new T.Vector3());
+    gltf.scene.position.sub(center);
+    model.scale.setScalar(2.8 / Math.max(...core.getSize(new T.Vector3()).toArray()));
+    model.updateMatrixWorld(true);
+    fullBox = new T.Box3();
+    for (const [id, pieces] of meshes) if (partMap.get(id).category !== 'tracts') fullBox.union(bounds(pieces));
+    function mean(predicate) {
+      const selected = [...meshes.entries()].filter(([id]) => predicate(partMap.get(id)));
+      return selected.reduce((v, [, pieces]) => v.add(bounds(pieces).getCenter(new T.Vector3())), new T.Vector3()).divideScalar(selected.length || 1);
+    }
+    front = mean(p => p.label === 'Transverse frontopolar gyrus and sulcus').sub(mean(p => p.label === 'Occipital pole'));
+    front.y = 0; front.normalize();
+    left = mean(p => p.category === 'cortex' && p.side === 'left').sub(mean(p => p.category === 'cortex' && p.side === 'right'));
+    left.y = 0; left.normalize();
+    loaded = true;
+    fit(fullBox, front.clone().addScaledVector(left, 1.4).add(new T.Vector3(0, 0.35, 0)).normalize());
+    callbacks.onProgress(100);
+    render();
+  } catch (error) { dispose(); throw error; }
+
+  return {
+    update,
+    dispose,
+    focus(id) { const pieces = meshes.get(id); if (pieces) fit(bounds(pieces)); },
+    view(view) {
+      const dirs = { front, back: front.clone().negate(), left, right: left.clone().negate(), top: new T.Vector3(0, 1, 0.001), oblique: front.clone().addScaledVector(left, 1.4).add(new T.Vector3(0, 0.35, 0)).normalize() };
+      fit(fullBox, dirs[view] || dirs.oblique);
+    },
+    zoom(factor) { camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target); controls.update(); dirty = true; },
+    image() { renderer.render(scene, camera); return canvas.toDataURL('image/png'); },
+  };
+}

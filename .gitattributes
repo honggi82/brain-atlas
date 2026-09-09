@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.glb binary
+*.wasm binary
+*.xlsx binary
+public/models/manifest.json -text
+public/licenses/* -text

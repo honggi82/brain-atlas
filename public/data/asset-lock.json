@@ -1,0 +1,12 @@
+{
+  "repository": "itayinbarr/brainproject",
+  "revision": "2929e94f521a8ddceab26bc100a98dc06b0da060",
+  "sha256": {
+    "public/models/brain.glb": "76a49ea4526a4880613aec7a02756bd7301b0b9d0680d7cae33e197b672c5453",
+    "public/models/manifest.json": "66c32355e02c3ba5fadf3b3bdb61b18c619162d6c5ee2083262e59bed4274d93",
+    "reference/data.js": "e77552bf93cef611f2e1e5ee2da8b6510366be6b9314ee649a8e60bac10a90d6",
+    "reference/scene.js": "b8e24ae6fef371f7db7704ce0d760bccdccc001f60cd64540d02c339931b4fd0",
+    "public/licenses/brainproject.txt": "c8ae081bfc6dbc99f98a4ade5ade798eda4be4d1c6c8a34205b9d084a03e8c26",
+    "reference/registration.md": "90559c66ea9c17a14ac300451c9bf069f561eedf97467eb0be9b933d9f14383b"
+  }
+}
