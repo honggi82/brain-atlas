@@ -23,8 +23,8 @@ export const CATEGORIES = {
 const rows = `
 Posterior transverse collateral sulcus|뒤가로곁고랑|측두엽 아래쪽 곁고랑의 뒤 가로 부분입니다. 주변 이랑의 위치를 구분하는 해부학적 표지입니다.
 Angular gyrus|각이랑|아래두정소엽의 뒤쪽 부분으로 언어 이해, 의미 처리, 수 개념과 여러 감각 정보의 통합에 관여합니다.
-Anterior occipital sulcus|앞뒤통수고랑|뒤통수엽 앞쪽 경계 부근의 고랑으로 인접 피질의 위치를 구분합니다. 고랑 자체를 독립된 기능 영역으로 보지는 않습니다.
-Calcarine sulcus|새발톱고랑|뒤통수엽 안쪽 면의 고랑입니다. 양쪽 벽을 따라 일차시각피질이 위치합니다.
+Anterior occipital sulcus|앞뒤통수고랑|후두엽 앞쪽 경계 부근의 고랑으로 인접 피질의 위치를 구분합니다. 고랑 자체를 독립된 기능 영역으로 보지는 않습니다.
+Calcarine sulcus|새발톱고랑|후두엽 안쪽 면의 고랑입니다. 양쪽 벽을 따라 일차시각피질이 위치합니다.
 Central sulcus|중심고랑|전두엽과 두정엽 사이의 경계입니다. 앞의 중심앞이랑과 뒤의 중심뒤이랑을 구분합니다.
 Cingulate gyrus (Posteroventral part)|띠이랑 뒤아래부분|안쪽 대뇌피질의 후방 띠 영역으로 기억 및 공간적 맥락 처리와 관련된 연결망에 참여합니다.
 Cingulate gyrus and sulcus (Middle anterior part)|띠이랑·띠고랑 중간앞부분|띠피질의 앞쪽 중간 영역으로 행동 조절, 노력 배분, 통증의 행동적 반응과 관련됩니다. 표시 형상에는 고랑이 함께 포함됩니다.
@@ -32,24 +32,24 @@ Cingulate gyrus and sulcus (Middle posterior part)|띠이랑·띠고랑 중간�
 Cingulate gyrus and sulcus (Posterior dorsal part)|띠이랑·띠고랑 뒤위부분|뒤띠피질 주변으로 내부 지향적 사고, 기억과 주의 전환에 관여하는 연결망에 참여합니다.
 Cingulate sulcus (Marginal part)|띠고랑 모서리부분|띠고랑이 위쪽으로 향하는 부분으로 중심곁소엽의 뒤쪽을 구분하는 표지입니다.
 Circular sulcus of insula|섬엽둘레고랑|섬엽과 이를 덮는 이마·마루·관자 덮개를 구분하는 경계입니다.
-Collateral sulcus|곁고랑|측두·뒤통수엽 아래안쪽의 고랑으로 혀이랑·해마곁이랑과 가쪽의 방추상 영역을 구분합니다.
-Cuneus|쐐기소엽|새발톱고랑 위쪽의 안쪽 뒤통수엽입니다. 시각 정보 처리에 참여합니다.
+Collateral sulcus|곁고랑|측두·후두엽 아래안쪽의 고랑으로 혀이랑·해마곁이랑과 가쪽의 방추상 영역을 구분합니다.
+Cuneus|쐐기소엽|새발톱고랑 위쪽의 안쪽 후두엽입니다. 시각 정보 처리에 참여합니다.
 Hippocampus|해마|안쪽 측두엽의 구조로 새로운 일화·서술 기억의 형성과 공간 탐색에 핵심적으로 관여합니다.
-Inferior occipital gyrus and sulcus|아래뒤통수이랑·고랑|뒤통수엽 아래쪽의 피질과 경계입니다. 시각적 형태 정보를 처리하는 연결망에 참여합니다.
+Inferior occipital gyrus and sulcus|아래뒤통수이랑·고랑|후두엽 아래쪽의 피질과 경계입니다. 시각적 형태 정보를 처리하는 연결망에 참여합니다.
 Inferior temporal gyrus|아래관자이랑|측두엽 아래쪽의 연합피질로 복잡한 물체와 시각적 형태의 인식에 관여합니다.
 Insula (Subcentral gyrus and ant. and post. sulci)|섬엽·중심밑이랑 주변|가쪽고랑 깊은 곳의 피질과 인접 구조입니다. 섬엽은 몸속 감각, 미각, 통증 및 현저성 처리에 관여합니다.
 Lat Fis-ant-Horizont|가쪽고랑 앞수평가지|가쪽고랑의 앞 수평 가지로 아래이마이랑의 삼각부분과 눈확부분을 구분하는 표지입니다.
 Lat Fis-ant-Vertical|가쪽고랑 앞오름가지|가쪽고랑의 앞 오름 가지로 아래이마이랑의 덮개부분과 삼각부분을 구분합니다.
 Lat Fis-post|가쪽고랑 뒤가지|측두엽을 위쪽의 전두·두정엽과 구분하는 큰 고랑입니다. 섬엽은 이 고랑 깊은 곳에 위치합니다.
-Lateral occipital gyrus (Middle occipital gyrus)|가쪽뒤통수이랑·중간뒤통수이랑|뒤통수엽 가쪽의 연합시각피질로 물체 형태와 시각적 장면의 분석에 참여합니다.
+Lateral occipital gyrus (Middle occipital gyrus)|가쪽뒤통수이랑·중간뒤통수이랑|후두엽 가쪽의 연합시각피질로 물체 형태와 시각적 장면의 분석에 참여합니다.
 Lateral occipitotemporal gyrus|가쪽뒤통수관자이랑·방추상회|배쪽 시각 경로의 일부로 얼굴·물체·문자 등 복잡한 시각 범주의 인식에 관여합니다.
-Lingual gyrus|혀이랑|새발톱고랑 아래쪽의 안쪽 뒤통수엽입니다. 시각 정보와 복잡한 시각적 패턴의 처리에 참여합니다.
-Lunate sulcus|반달고랑|뒤통수엽 가쪽의 형태적 표지로 개인 간 변이가 큽니다. 일정한 기능 경계로 단정할 수 없습니다.
+Lingual gyrus|혀이랑|새발톱고랑 아래쪽의 안쪽 후두엽입니다. 시각 정보와 복잡한 시각적 패턴의 처리에 참여합니다.
+Lunate sulcus|반달고랑|후두엽 가쪽의 형태적 표지로 개인 간 변이가 큽니다. 일정한 기능 경계로 단정할 수 없습니다.
 Medial occipitotemporal gyrus (Parahippocampal)|안쪽뒤통수관자이랑·해마곁이랑|해마 주변의 안쪽 측두피질로 장면·장소·맥락 정보와 기억 처리에 관여합니다.
 Middle frontal gyrus|중간이마이랑|전두 연합피질의 일부로 작업기억, 주의, 계획과 인지 조절에 참여합니다.
 Middle temporal gyrus|중간관자이랑|의미 지식과 언어 이해, 시각 및 사회적 정보 처리에 관여하는 측두 연합피질입니다.
 Occipital pole|뒤통수극|대뇌의 가장 뒤쪽 부분입니다. 주변 시각피질에는 중심 시야의 표상이 크게 분포합니다.
-Occipitotemporal sulcus (Lateral part)|뒤통수관자고랑 가쪽부분|측두·뒤통수엽 아래쪽 이랑들을 구분하는 경계로 시각 연합피질의 위치를 찾는 표지입니다.
+Occipitotemporal sulcus (Lateral part)|뒤통수관자고랑 가쪽부분|측두·후두엽 아래쪽 이랑들을 구분하는 경계로 시각 연합피질의 위치를 찾는 표지입니다.
 Orbital gyri (Frontomarginal gyrus and sulcus)|눈확이랑·이마모서리이랑 주변|전두엽 아래면 앞쪽 영역으로 보상 가치, 선택과 정서적 정보의 평가에 관여하는 피질과 인접합니다.
 Orbital gyri|눈확이랑|눈확 위쪽 전두피질로 보상·처벌의 가치 평가, 의사결정 및 사회적 행동 조절에 관여합니다.
 Orbital part of inferior frontal gyrus|아래이마이랑 눈확부분|아래전두피질의 앞아래 부분으로 의미 처리 및 정서·가치 정보와 관련된 조절에 참여합니다.
@@ -65,7 +65,7 @@ Intraparietal sulcus|마루속고랑|위·아래두정소엽을 나누는 고랑
 Olfactory sulcus|후각고랑|전두엽 아래면의 고랑으로 후각망울·후각로가 인접하며 곧은이랑과 눈확이랑을 구분합니다.
 Opercular part of inferior frontal gyrus|아래이마이랑 덮개부분|아래전두피질의 뒤쪽 부분입니다. 우세반구에서 말소리·발화 처리에 관여하며 행동 조절에도 참여합니다.
 Paracentral sulcus|중심곁고랑|대뇌 안쪽 면에서 중심곁소엽의 앞쪽을 구분하는 표지입니다.
-Parieto-occipital sulcus|마루뒤통수고랑|안쪽 면에서 두정엽과 뒤통수엽을 구분하며 쐐기앞소엽과 쐐기소엽의 경계가 됩니다.
+Parieto-occipital sulcus|마루뒤통수고랑|안쪽 면에서 두정엽과 후두엽을 구분하며 쐐기앞소엽과 쐐기소엽의 경계가 됩니다.
 Postcentral sulcus|중심뒤고랑|중심뒤이랑의 뒤쪽 경계로 체성감각피질과 두정 연합피질의 위치를 구분합니다.
 Precentral sulcus (inferior part)|중심앞고랑 아래부분|중심앞이랑 앞쪽의 아래 경계로 운동피질의 위치를 찾는 표지입니다.
 Precentral sulcus (Superior part)|중심앞고랑 위부분|중심앞이랑 앞쪽의 위 경계로 일차운동피질과 앞쪽 운동 관련 피질을 구분하는 표지입니다.
@@ -74,15 +74,15 @@ Subparietal sulcus|마루밑고랑|안쪽 두정엽에서 쐐기앞소엽과 뒤
 Sulcus interm prim-Jensen|중간고랑·젠센고랑|아래두정소엽에서 모서리위이랑과 각이랑 주변을 구분하는 변이성 고랑입니다.
 Superior frontal gyrus|위이마이랑|등쪽·안쪽 전두피질로 계획, 작업기억, 자기 관련 처리 및 운동 준비의 여러 연결망에 참여합니다.
 Superior frontal sulcus|위이마고랑|위이마이랑과 중간이마이랑 사이의 경계입니다.
-Superior occipital gyri|위뒤통수이랑|뒤통수엽 위쪽의 시각 관련 피질로 시각·공간 정보 처리에 참여합니다.
+Superior occipital gyri|위뒤통수이랑|후두엽 위쪽의 시각 관련 피질로 시각·공간 정보 처리에 참여합니다.
 Superior parietal lobule|위두정소엽|몸과 공간에 대한 감각 정보를 통합하여 시각에 따른 손 동작과 공간적 주의를 돕습니다.
 Superior temporal gyrus (Lateral part)|위관자이랑 가쪽부분|청각 및 언어 관련 처리에 관여하는 측두피질입니다. 기능은 앞뒤 위치와 반구에 따라 달라집니다.
 Superior temporal sulcus|위관자고랑|위·중간관자이랑 사이의 고랑입니다. 인접 피질은 말소리, 생물학적 움직임과 사회적 신호 처리에 참여합니다.
 Supramarginal gyrus|모서리위이랑|아래두정소엽의 앞쪽 부분으로 음운 처리, 몸의 표상 및 도구 사용과 관련된 감각운동 통합에 참여합니다.
-Temporal plane|관자평면|위관자엽의 위쪽 면에 있는 청각 관련 영역으로 복잡한 소리와 언어 처리에 참여합니다.
+Temporal plane|관자평면|측두엽의 위쪽 면에 있는 청각 관련 영역으로 복잡한 소리와 언어 처리에 참여합니다.
 Temporal pole|관자극|측두엽의 앞끝으로 의미 지식, 사회적 정보와 정서적 맥락을 통합하는 데 관여합니다.
 Transverse frontopolar gyrus and sulcus|가로이마극이랑·고랑|전두엽 맨 앞부분의 피질과 경계입니다. 이마극 연결망은 추상적 계획과 여러 목표의 조절에 관여합니다.
-Transverse occipital sulcus|가로뒤통수고랑|뒤통수엽 위쪽에서 이랑을 구분하며 마루속고랑 뒤쪽과 연관되는 해부학적 표지입니다.
+Transverse occipital sulcus|가로뒤통수고랑|후두엽 위쪽에서 이랑을 구분하며 마루속고랑 뒤쪽과 연관되는 해부학적 표지입니다.
 Transverse temporal gyri|가로관자이랑·헤슐이랑|위관자면 깊은 곳에 위치하며 일차청각피질을 포함합니다. 소리의 기본 특성을 처리합니다.
 Triangular part of inferior frontal gyrus|아래이마이랑 삼각부분|아래전두피질의 중간 부분입니다. 우세반구에서 의미 선택과 언어 생산에 관여합니다.
 Accessory nucleus of oculomotor nerve|눈돌림신경 덧핵|에딩거–베스트팔핵으로 불리며 부교감성 경로를 통해 동공 수축과 수정체 조절에 관여합니다.
@@ -182,11 +182,11 @@ Dentatorubrothalamic tract|치아적색시상로|소뇌 깊은 핵에서 위소�
 Frontal aslant tract|이마빗다발|안쪽 위전두 영역과 아래전두 영역을 연결하며 말하기의 시작과 동작 개시·조절에 관련됩니다.
 Inferior cerebellar peduncle|아래소뇌다리|척수·연수·안뜰계 등과 소뇌 사이를 연결하며 고유감각과 평형 관련 정보를 전달합니다.
 Inferior fronto-occipital fasciculus|아래이마뒤통수다발|전두엽과 뒤쪽 시각·측두두정 영역을 연결하는 긴 연합 경로로 의미 및 시각 정보 통합에 관여합니다.
-Inferior longitudinal fasciculus|아래세로다발|뒤통수엽과 측두엽을 연결하는 배쪽 연합 경로로 시각적 인식과 기억의 연계에 관여합니다.
+Inferior longitudinal fasciculus|아래세로다발|후두엽과 측두엽을 연결하는 배쪽 연합 경로로 시각적 인식과 기억의 연계에 관여합니다.
 Medial lemniscus|안쪽섬유띠|뇌간에서 정교한 촉각·진동·고유감각 정보를 시상으로 전달하는 상행 경로입니다.
 Middle cerebellar peduncle|중간소뇌다리|주로 교뇌핵에서 반대쪽 소뇌로 들어가는 섬유를 포함하여 피질 정보를 소뇌로 중계합니다.
 Middle longitudinal fasciculus|중간세로다발|위측두 영역과 두정·뒤통수 영역을 연결하는 연합 경로로 청각·언어·주의 정보의 통합과 관련됩니다.
-Optic radiation|시각방사|가쪽무릎체와 일차시각피질을 연결하여 시야 정보를 전달합니다. 관자엽·두정엽을 지나는 섬유가 포함됩니다.
+Optic radiation|시각방사|가쪽무릎체와 일차시각피질을 연결하여 시야 정보를 전달합니다. 측두엽·두정엽을 지나는 섬유가 포함됩니다.
 Posterior thalamic radiation|뒤시상방사|시상과 뒤쪽 두정·뒤통수피질을 연결하는 방사섬유로 감각 및 연합 정보 전달에 관여합니다.
 Reticulospinal tract|그물척수로|뇌간 그물체에서 척수로 내려가 자세·근긴장과 전신 움직임의 조절에 관여합니다.
 Superior cerebellar peduncle|위소뇌다리|소뇌의 주요 출력 통로로 깊은 소뇌핵과 중뇌·시상을 연결합니다. 일부 입력 섬유도 포함합니다.
@@ -207,8 +207,8 @@ const extraTracts = {
   C_FP: ['띠다발 이마–마루구간', 'Cingulum, frontal-parietal segment', '안쪽 이마·마루 영역을 잇는 띠다발의 아틀라스 구간입니다. 인지 조절과 기억·주의 연결망의 일부입니다.', 'An atlas segment of the cingulum linking medial frontal and parietal regions within cognitive-control, memory and attention networks.'],
   C_FPH: ['띠다발 이마–해마곁구간', 'Cingulum, frontal-parahippocampal segment', '안쪽 이마 영역과 해마곁 영역을 잇는 띠다발 구간으로 기억·맥락 정보와 행동 조절을 연결하는 회로에 참여합니다.', 'An atlas segment linking medial frontal and parahippocampal regions within circuits relating contextual memory to behavioural control.'],
   C_PHP: ['띠다발 해마곁–마루구간', 'Cingulum, parahippocampal-parietal segment', '해마곁 영역과 안쪽 마루 영역을 잇는 아틀라스 구간으로 기억 및 공간적 맥락 처리 회로와 관련됩니다.', 'An atlas segment linking parahippocampal and medial parietal regions, associated with memory and spatial-context processing.'],
-  C_PH: ['띠다발 해마곁구간', 'Cingulum, parahippocampal segment', '안쪽 관자엽의 해마곁 영역을 지나는 띠다발 구간으로 기억과 맥락 정보의 교환에 관여합니다.', 'The parahippocampal segment of the cingulum traverses medial temporal regions and participates in memory and contextual-information exchange.'],
-  VOF: ['수직뒤통수다발', 'Vertical occipital fasciculus', '뒤통수엽의 등쪽과 배쪽 시각 영역을 연결하는 연합 경로로 시각 정보의 통합과 관련됩니다.', 'An association pathway linking dorsal and ventral occipital visual regions, involved in integrating visual information.'],
+  C_PH: ['띠다발 해마곁구간', 'Cingulum, parahippocampal segment', '안쪽 측두엽의 해마곁 영역을 지나는 띠다발 구간으로 기억과 맥락 정보의 교환에 관여합니다.', 'The parahippocampal segment of the cingulum traverses medial temporal regions and participates in memory and contextual-information exchange.'],
+  VOF: ['수직뒤통수다발', 'Vertical occipital fasciculus', '후두엽의 등쪽과 배쪽 시각 영역을 연결하는 연합 경로로 시각 정보의 통합과 관련됩니다.', 'An association pathway linking dorsal and ventral occipital visual regions, involved in integrating visual information.'],
   PTAT: ['PTAT 신경로 코드', 'PTAT (source tract code)', '원본 표와 약어집의 표기가 달라 긴 이름과 특정 기능을 확정하지 않았습니다. 연결 확률은 원본 값 그대로 제공합니다.', 'The source table and abbreviation list disagree, so an expanded name and specific function are not assigned. The original overlap probabilities are preserved.'],
   C_R: ['C_R 신경로 코드', 'C_R (source tract code)', '원본의 C_R과 약어집의 C_PR 차이를 보존했습니다. 특정 띠다발 구간으로 단정하지 않고 원본 연결 확률을 표시합니다.', 'The discrepancy between source C_R and abbreviation-list C_PR is retained. A specific cingulum segment is not assumed; original probabilities are displayed.'],
 };

@@ -160,5 +160,5 @@ export function localize(root = document.body) {
   }
 }
 
-const regions = { 'Frontal lobe': '이마엽', 'Parietal lobe': '마루엽', 'Temporal lobe': '관자엽', 'Occipital lobe': '뒤통수엽', 'Limbic lobe': '변연엽', 'Midbrain': '중뇌', 'Cerebellum': '소뇌', 'Brainstem': '뇌간', 'Diencephalon': '간뇌', 'Basal ganglia': '기저핵', 'Thalamus': '시상', 'Hypothalamus': '시상하부', 'Amygdala': '편도체', 'White matter': '백질', 'Ventricles': '뇌실' };
+const regions = { 'Frontal lobe': '전두엽', 'Parietal lobe': '두정엽', 'Temporal lobe': '측두엽', 'Occipital lobe': '후두엽', 'Limbic lobe': '변연엽', 'Midbrain': '중뇌', 'Cerebellum': '소뇌', 'Brainstem': '뇌간', 'Diencephalon': '간뇌', 'Basal ganglia': '기저핵', 'Thalamus': '시상', 'Hypothalamus': '시상하부', 'Amygdala': '편도체', 'White matter': '백질', 'Ventricles': '뇌실' };
 export const regionName = value => language === 'ko' && regions[value] ? `${regions[value]} (${value})` : value;

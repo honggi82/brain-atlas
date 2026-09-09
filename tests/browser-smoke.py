@@ -60,7 +60,7 @@ def run():
                 header = page.locator('.lobe-heading [data-lobe="frontal"]').bounding_box()
                 library = page.locator('#structure-list').bounding_box()
                 assert library['y'] <= header['y'] <= library['y'] + library['height'] - header['height']
-                assert page.locator('.detail-name').inner_text() == '이마엽 (Frontal lobe)'
+                assert page.locator('.detail-name').inner_text() == '전두엽 (Frontal lobe)'
                 assert page.locator('#scene-host').get_attribute('data-selected-structures') == '42'
                 assert page.locator('[data-lobe-expand]').count() == 7
                 page.locator('#isolate-part').click()

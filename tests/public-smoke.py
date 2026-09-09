@@ -19,10 +19,26 @@ with sync_playwright() as playwright:
             assert page.url.rstrip('/') == url.rstrip('/'), page.url
             assert page.locator('#scene-host').get_attribute('data-structures') == '325'
             assert page.locator('#lobe-legend [data-lobe]').count() == 7
-            page.locator('#lobe-legend [data-lobe="frontal"]').click()
-            assert page.locator('#scene-host').get_attribute('data-selected-structures') == '42'
+            for lobe, ko, en, count in [
+                ('frontal', '전두엽', 'Frontal lobe', 42),
+                ('parietal', '두정엽', 'Parietal lobe', 14),
+                ('occipital', '후두엽', 'Occipital lobe', 18),
+                ('temporal', '측두엽', 'Temporal lobe', 22),
+            ]:
+                label = f'{ko} ({en})'
+                legend = page.locator(f'#lobe-legend [data-lobe="{lobe}"]')
+                assert label in legend.inner_text()
+                legend.click()
+                assert page.locator('.detail-name').inner_text() == label
+                assert label in page.locator(f'.lobe-heading [data-lobe="{lobe}"]').inner_text()
+                assert page.locator('#scene-host').get_attribute('data-selected-structures') == str(count)
+                assert not any(old in page.locator('#inspector-content').inner_text()
+                               for old in ['이마엽', '마루엽', '뒤통수엽', '관자엽'])
+                page.locator('[data-language="en"]').click()
+                assert page.locator('.detail-name').inner_text() == en
+                page.locator('[data-language="ko"]').click()
+                assert page.locator('.detail-name').inner_text() == label
             page.locator('[data-language="en"]').click()
-            assert page.locator('.detail-name').inner_text() == 'Frontal lobe'
             page.locator('[data-mode="tractography"]').click()
             page.wait_for_selector('#scene-host[data-fiber-state="ready"]', timeout=60000)
             page.locator('#fiber-context').uncheck()
@@ -33,6 +49,6 @@ with sync_playwright() as playwright:
             assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
             assert not errors, errors
             context.close()
-            print(f'PASS: anonymous HTTPS visitor at {width} x {height}; anatomy, lobes, En, native tractography and connectome.', flush=True)
+            print(f'PASS: anonymous HTTPS visitor at {width} x {height}; four Korean lobe names, Kr/En switching, anatomy, native tractography and connectome.', flush=True)
     finally:
         browser.close()
