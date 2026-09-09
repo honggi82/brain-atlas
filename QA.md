@@ -1,5 +1,25 @@
 # Verification — 2026-09-09
 
+## Streamline and unified-tree upgrade
+
+The previous working app remains in `../brain-atlas` at commit `4bb19a9`. The candidate is in `brain-atlas-v2` and reuses the exact same unmodified anatomical GLB, terminology catalogue and probability matrix.
+
+- `npm test`: **16/16 passed**, including all 68 streamline payload hashes, 98,484 source-index identities, finite coordinates, original bilateral mappings, 48 matrix matches, deliberate unresolved codes, RGB orientation invariance, non-bridging line generation, corrupt-data rejection and the display-coordinate picking tolerance.
+- `python scripts/verify-streamlines.py`: **544/544** selected original TRK trajectories checked independently, eight per bundle. Original endpoints and retained vertices match; the largest measured simplification deviation is **0.249986 mm**. This checks numerical conversion rather than biological validity.
+- `python scripts/verify-matrix.py`: **9,360/9,360** values still match the original workbook.
+- `npm run check`, Python compilation and the production build pass. The Three.js scene chunk remains above Vite's advisory size threshold (about 571 kB, 147 kB gzipped); the advisory remains visible.
+- The in-app browser exercised source-derived corpus-callosum, arcuate, corticospinal and optic-radiation views; left/right selection; 200 versus 2,000 selected fibres through the density slider; isolated versus context tracts; and switching back to the preserved anatomical illustration with the same probability table.
+- Direct clicking of displayed streamlines selected the corresponding named bundle. The display transform is baked into line geometry so Three.js raycasting applies its 0.5 mm tolerance consistently; this is a UI hit-test tolerance, not an accuracy claim for the atlas.
+- The unified left tree has eight anatomical parent groups and individual visibility checkboxes. The inspector has **zero** duplicated layer controls. Hiding everything then selecting only left hippocampus renders exactly one structure; category enable/disable and mixed check state were exercised. Korean/English switching preserved the query and selection.
+- An intentional first-detail HTTP 503 (`--test-streamline-failure`) displayed an error and retry control; retry loaded the full 2,000 corpus-callosum trajectories. Normal in-app flows had no captured console errors.
+- `python tests/browser-smoke.py` exercises independent headless Chromium at **1280 × 720** and **390 × 844**: tree visibility, single-structure selection, contralateral selection after hiding a group, bilingual state, real streamlines, density, zoom, whole-brain overview, view switching and recovery from a table-only code to the whole brain. Both complete flows passed and browsers closed in `finally`.
+- The in-app viewport override did not change the measured 1280 × 720 page size. It was reset; mobile assertions and the mobile screenshot instead come from isolated headless Chromium with the actual viewport size asserted. The user's Chrome windows, mouse and keyboard were not controlled.
+- Screenshots are local QA artifacts in `test-results/fibres-1280.png` and `test-results/fibres-390.png`, excluded from Git. The mobile screenshot was visually inspected and has no horizontal overflow.
+
+Physical mobile devices, Safari/Firefox, expert anatomical review and public hosting remain untested. The archive is a population-average diffusion-MRI reconstruction; individual axons, synapses or a clinical DTI examination are not represented.
+
+## Original baseline verification
+
 ## Automated checks
 
 - `npm run check`: syntax checks for 10 JavaScript files and UTF-8 checks passed.

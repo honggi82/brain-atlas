@@ -1,7 +1,9 @@
 import './style.css';
+import './tractography.css';
 import { CATEGORIES, SOURCES, searchParts, tractKnowledge } from './knowledge.js';
 import { connectionsForTract, connectionsForRegion, percent } from './connectome.js';
 import { getLanguage, setLanguage, localize, ui, partName, partSummary, regionName } from './i18n.js';
+import { makeCatalogue, bundleForTract } from './streamlines.js';
 
 const icon = (name, size = 20) => {
   const paths = {
@@ -22,19 +24,21 @@ const icon = (name, size = 20) => {
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sideName = side => ui({ left: '좌측', right: '우측', median: '정중선', both: '양쪽' }[side]);
-let parts = [], connectome, scene;
+let parts = [], connectome, scene, fiberManifest, bundles = [], fiberStatus = 'idle';
 const state = {
   mode: 'anatomy', selected: 284, hemisphere: 'both', opacity: 1,
   categories: new Set(Object.keys(CATEGORIES).filter(k => k !== 'tracts' && k !== 'white_matter')),
   hidden: new Set(), isolate: false, query: '', category: 'all', tract: 'L_AF', threshold: 0.05,
   regionQuery: '', region: null,
+  expanded: new Set(), fiberExpanded: new Set(['commissural']),
+  representation: 'streamlines', fiber: 'CC', fiberContext: true, fiberDensity: 1, fiberHidden: new Set(),
 };
 
 $('#app').innerHTML = `
   <a class="skip-link" href="#search">구조 검색으로 이동</a>
   <header class="topbar">
     <a class="brand" href="./" aria-label="Brain Atlas 처음으로"><span class="brand-icon">${icon('brain', 28)}</span><span><strong>Brain Atlas<span class="brand-dot">.</span></strong><small>뇌의 구조와 연결</small></span></a>
-    <nav class="modes" aria-label="탐색 모드"><button data-mode="anatomy" class="active" aria-pressed="true">${icon('brain')} 해부학</button><button data-mode="connectome" aria-pressed="false">${icon('network')} Connectome</button></nav>
+    <nav class="modes" aria-label="탐색 모드"><button data-mode="anatomy" class="active" aria-pressed="true">${icon('brain')} 해부학</button><button data-mode="tractography" aria-pressed="false">${icon('network')} 섬유 추적</button><button data-mode="connectome" aria-pressed="false">Connectome</button></nav>
     <div class="header-end"><div class="language-switch" role="group" aria-label="Language"><button data-language="ko" lang="ko" aria-label="한국어 Kr">Kr</button><button data-language="en" lang="en" aria-label="English En">En</button></div><span class="review-badge">검토본</span><button class="icon-button" id="about" aria-label="데이터 출처와 사용 안내">${icon('info')}</button></div>
   </header>
   <main class="workbench">
@@ -53,6 +57,7 @@ $('#app').innerHTML = `
       <div class="camera-bar" aria-label="카메라 방향"><button data-view="oblique" class="active" title="사선 보기">3/4</button><button data-view="front">앞</button><button data-view="back">뒤</button><button data-view="left">좌</button><button data-view="right">우</button><button data-view="top">위</button><span></span><button id="zoom-in" aria-label="확대">＋</button><button id="zoom-out" aria-label="축소">−</button></div>
       <div class="stage-bottom"><div class="hemisphere-controls" role="group" aria-label="표시할 반구"><button data-side="both" class="active" aria-pressed="true">양쪽</button><button data-side="left" aria-pressed="false">좌뇌</button><button data-side="right" aria-pressed="false">우뇌</button></div><button id="reset" class="reset-button">${icon('reset', 16)} 전체 복원</button></div>
       <div class="opacity-box"><label for="opacity">피질 투명도 <span id="opacity-value">0%</span></label><input id="opacity" type="range" min="0" max="100" value="0"/><div><span>표면 보기</span><span>내부 보기</span></div></div>
+      <div class="fiber-controls" hidden><div class="fiber-control-row"><label for="fiber-density">표시 밀도 <strong id="fiber-density-value">100%</strong></label><label><input type="checkbox" id="fiber-context" checked/> 주변 경로</label><button id="fiber-all">전체 섬유</button></div><input id="fiber-density" type="range" min="10" max="100" step="10" value="100"/><div class="direction-legend"><span><i class="red"></i>좌우</span><span><i class="green"></i>앞뒤</span><span><i class="blue"></i>위아래</span><small>색상 = 섬유 방향</small></div><div id="fiber-status" role="status"></div><button id="retry-fibers" hidden>다시 불러오기</button></div>
       <p class="gesture-hint">드래그하여 회전 · 휠로 확대 · 구조를 클릭하여 선택</p>
       <div id="connection-graph" class="connection-graph" hidden></div>
     </section>
@@ -63,10 +68,20 @@ $('#app').innerHTML = `
   <dialog id="about-dialog" aria-labelledby="about-title"><button id="close-about" class="dialog-close" aria-label="닫기">×</button><span class="eyebrow">SOURCES & METHODS</span><h2 id="about-title">이 아틀라스에 대하여</h2><p>대학·의학 학습을 위한 뇌 해부도와 구조적 연결 탐색 도구입니다. 한국어 요약은 학습을 돕기 위한 설명이며 각 구조는 여러 기능과 연결망에 참여합니다.</p><h3>해부학</h3><p>Brain Project의 Z-Anatomy / BodyParts3D 모델에서 뇌 구조와 백질 경로 325개 형상을 선택했습니다. 좌우·세부 조각을 포함하며, 서로 다른 영문 이름은 174개입니다. 혈관·말초 뇌신경은 이 버전의 범위에서 제외했습니다.</p><p>추가된 영상 아틀라스 기반 핵과 신경로는 약 7 mm 정합 오차가 보고된 교육용 근사 형상입니다. 신경로의 가느다란 관은 전체 섬유다발을 대표하는 단순화이며, 연구 좌표·MRI 단면·수술 계획용 모델이 아닙니다.</p><h3>구조적 Connectome</h3><p>Yeh (2022)의 HCP1065 신경로–피질영역 표를 사용합니다. 180개 HCP-MMP 영역 × 좌우 52개 열의 9,360개 값을 보존했습니다. 수치는 신경로 마스크가 영역과 겹치는 피험자 비율로, 축삭 수·신호 방향·영역 간 연결 강도·기능적 상관이 아닙니다. 통과 섬유 및 tractography의 오차가 포함될 수 있습니다.</p><p>HCP-MMP 영역과 해부 모델의 이랑은 서로 다른 구획입니다. 영역 ID를 3D 피질에 임의 대응시키지 않습니다. 표의 36개 열은 HCP 유래 근사 신경로, 2개 뇌궁 열은 별도 Z-Anatomy 형상에 이름·좌우 기준으로 대응합니다. 나머지 14개 열은 표로만 제공합니다.</p><p>원본의 PTAT/TPAT 및 C_R/C_PR 약어 차이를 보존했습니다. 전체 연구 대상은 1,065명이지만 일부 열의 분모가 다르므로 확률을 인원수로 환산하지 않습니다. 0은 원본의 0이며, 화면 임계값은 데이터 자체를 바꾸지 않습니다.</p><div class="source-links">${Object.values(SOURCES).map(s => `<a href="${s.url}" target="_blank" rel="noreferrer">${s.title} ↗</a>`).join('')}<a href="https://www.nature.com/articles/s41467-022-32595-4" target="_blank" rel="noreferrer">Yeh 2022 · 연구 방법 및 한계 ↗</a><a href="https://www.humanconnectome.org/" target="_blank" rel="noreferrer">Human Connectome Project ↗</a><a href="data/tract_to_region_connectome_MMP.xlsx" download>원본 연결 확률 표 다운로드</a><a href="ATTRIBUTION.md" target="_blank">저작권·라이선스·HCP 감사 문구</a></div></dialog>
 `;
 
+$('#about-dialog .source-links').insertAdjacentHTML('beforebegin', '<h3>정밀 섬유 보기</h3><p>섬유 추적 보기에서는 HCP1065 원본의 68개 다발과 98,484개 궤적 표본을 제공합니다. 이 보기의 좌표계는 해부 모형과 별개입니다. 연결표 52개 열 중 48개가 원본 궤적에 대응하며, PTAT·C_R은 양쪽 모두 미대응으로 남겨두었습니다.</p><p><a href="TRACTOGRAPHY.md" target="_blank">섬유 자료의 처리 방법 ↗</a></p>');
+for (const p of $('#about-dialog').querySelectorAll('p')) if (p.textContent.startsWith('HCP-MMP 영역과 해부 모델의 이랑')) p.prepend('해부 모형 기준: ');
+
 function sync() {
+  const fiberView = state.mode === 'tractography' || (state.mode === 'connectome' && state.representation === 'streamlines');
+  document.body.dataset.fiberView = fiberView;
+  $('.opacity-box').hidden = fiberView;
+  $('.fiber-controls').hidden = !fiberView;
+  $('#fiber-density').value = state.fiberDensity * 100;
+  $('#fiber-density-value').textContent = `${Math.round(state.fiberDensity * 100)}%`;
+  $('#fiber-context').checked = state.fiberContext;
   scene?.update(state);
-  $('.floating-label').hidden = state.selected == null;
-  const part = parts.find(p => p.id === state.selected);
+  const part = fiberView ? bundles.find(b => b.id === state.fiber) : parts.find(p => p.id === state.selected);
+  $('.floating-label').hidden = !part;
   $('#floating-name').textContent = part ? `${partName(part)} · ${sideName(part.side)}` : '';
   $('#floating-en').textContent = '';
   $('#opacity').value = Math.round((1 - state.opacity) * 100);
@@ -74,10 +89,21 @@ function sync() {
   document.querySelectorAll('[data-side]').forEach(b => { b.classList.toggle('active', b.dataset.side === state.hemisphere); b.setAttribute('aria-pressed', b.dataset.side === state.hemisphere); });
   $('#live-status').textContent = part ? `${sideName(part.side)} ${partName(part)} 선택됨` : '선택 해제';
   localize();
+  showFiberStatus();
+}
+
+function showFiberStatus() {
+  const bundle = bundles.find(b => b.id === state.fiber);
+  const visible = b => !state.fiberHidden.has(b.id) && (state.hemisphere === 'both' || ['median', 'both'].includes(b.side) || b.side === state.hemisphere);
+  const count = bundle ? (visible(bundle) ? Math.ceil(bundle.count * state.fiberDensity) : 0) : bundles.filter(visible).reduce((sum, b) => sum + Math.ceil(b.overviewCount * state.fiberDensity), 0);
+  const messages = { idle: '원본 섬유 궤적', loading: '섬유 궤적을 불러오는 중', error: '정밀 궤적을 불러오지 못했습니다. 다시 시도해주세요.', unavailable: '이 코드에 대응하는 원본 궤적이 없습니다.' };
+  $('#fiber-status').textContent = fiberStatus === 'ready' ? `${ui(bundle ? '선택 다발' : '전체 섬유')}: ${count.toLocaleString('en-US')} ${ui('개 streamline · 표시용 표본')}` : ui(messages[fiberStatus]);
+  $('#retry-fibers').hidden = fiberStatus !== 'error';
 }
 
 function renderList() {
   if (!parts.length) return;
+  if (state.mode === 'tractography') { renderFiberList(); return; }
   const connect = state.mode === 'connectome';
   $('#library-kicker').textContent = connect ? 'HCP1065 CONNECTOME' : 'ANATOMY LIBRARY';
   $('#library-title').textContent = connect ? '연결 경로 탐색' : '뇌 구조 탐색';
@@ -92,25 +118,35 @@ function renderList() {
     $('#structure-list').innerHTML = results.length ? results.map(t => {
       const knowledge = tractKnowledge(t);
       const ko = knowledge ? partName(knowledge) : t.fullName || `${t.code} · 원본 약어`;
-      return `<button class="structure ${state.tract === t.id ? 'selected' : ''}" data-tract="${t.id}" aria-pressed="${state.tract === t.id}"><span class="structure-dot" style="--dot:#549e96"></span><span><strong>${escape(ko)}</strong><small>${escape(t.code)} · ${sideName(t.side)}${t.modelMapping ? '' : ' · 표 전용'}</small></span><span class="side-letter">${t.side === 'left' ? 'L' : 'R'}</span></button>`;
+      return `<button class="structure ${state.tract === t.id ? 'selected' : ''}" data-tract="${t.id}" aria-pressed="${state.tract === t.id}"><span class="structure-dot" style="--dot:#549e96"></span><span><strong>${escape(ko)}</strong><small>${escape(t.code)} · ${sideName(t.side)}${(state.representation === 'streamlines' ? bundleForTract(t, bundles) : t.modelMapping) ? '' : ' · 표 전용'}</small></span><span class="side-letter">${t.side === 'left' ? 'L' : 'R'}</span></button>`;
     }).join('') : '<p class="empty">검색 결과가 없습니다.<br/>이름이나 약어를 바꿔보세요.</p>';
     return;
   }
   const results = searchParts(parts, state.query).filter(p => (state.category === 'all' || state.category === p.category) && (state.hemisphere === 'both' || p.side === 'median' || state.hemisphere === p.side));
   $('#list-caption').textContent = `${results.length}개 형상`;
-  $('#structure-list').innerHTML = results.length ? results.map(p => `<button class="structure ${state.selected === p.id ? 'selected' : ''} ${state.hidden.has(p.id) ? 'muted' : ''}" data-part="${p.id}" aria-pressed="${state.selected === p.id}"><span class="structure-dot" style="--dot:${CATEGORIES[p.category].color}"></span><span><strong>${escape(partName(p))}</strong><small>${escape(ui(CATEGORIES[p.category].name))} &middot; ${sideName(p.side)}</small></span><span class="side-letter">${{left:'L',right:'R',median:'M'}[p.side]}</span></button>`).join('') : '<p class="empty">검색 결과가 없습니다.<br/>다른 이름이나 기능으로 찾아보세요.</p>';
+  $('#structure-list').innerHTML = results.length ? Object.entries(CATEGORIES).map(([category, meta]) => {
+    const children = results.filter(p => p.category === category);
+    if (!children.length) return '';
+    const all = parts.filter(p => p.category === category);
+    const visible = all.filter(p => state.categories.has(category) && !state.hidden.has(p.id)).length;
+    const open = state.expanded.has(category) || Boolean(state.query);
+    return `<section class="tree-group"><div class="tree-heading"><input type="checkbox" data-layer="${category}" aria-label="${escape(ui(meta.name))} ${ui('전체 표시')}" ${visible === all.length ? 'checked' : ''} data-mixed="${visible > 0 && visible < all.length}"/><button data-expand="${category}" aria-expanded="${open}"><span>${open ? '▾' : '▸'} ${ui(meta.name)}</span><small>${visible}/${all.length}</small></button></div>${open ? children.map(p => `<div class="tree-row"><input type="checkbox" data-visible="${p.id}" aria-label="${ui('표시')}: ${escape(partName(p))} · ${sideName(p.side)}" ${state.categories.has(category) && !state.hidden.has(p.id) ? 'checked' : ''}/><button class="structure ${state.selected === p.id ? 'selected' : ''}" data-part="${p.id}" aria-pressed="${state.selected === p.id}"><span><strong>${escape(partName(p))}</strong><small>${sideName(p.side)}</small></span></button></div>`).join('') : ''}</section>`;
+  }).join('') : '<p class="empty">검색 결과가 없습니다.<br/>다른 이름이나 기능으로 찾아보세요.</p>';
+  document.querySelectorAll('[data-mixed]').forEach(input => { input.indeterminate = input.dataset.mixed === 'true'; });
 }
 
 function renderCategories() {
-  $('#category-filters').innerHTML = `<button class="filter ${state.category === 'all' ? 'active' : ''}" data-category="all">전체</button>${Object.entries(CATEGORIES).map(([id, c]) => `<button class="filter ${state.category === id ? 'active' : ''}" data-category="${id}">${c.short}</button>`).join('')}`;
+  $('#category-filters').innerHTML = '<button class="filter" id="show-all">전체 표시</button><button class="filter" id="hide-all">전체 숨기기</button><button class="filter" id="collapse-all">모두 접기</button>';
 }
 
 function selectPart(id, focus = false) {
   const p = parts.find(p => p.id === id);
   if (!p) return;
   state.selected = id;
+  if (!state.categories.has(p.category)) parts.filter(x => x.category === p.category).forEach(x => state.hidden.add(x.id));
   state.hidden.delete(id);
   state.categories.add(p.category);
+  state.expanded.add(p.category);
   if (state.hemisphere !== 'both' && p.side !== 'median' && state.hemisphere !== p.side) state.hemisphere = p.side;
   sync(); renderList(); renderInspector(); localize();
   if (focus) scene?.focus(id);
@@ -118,10 +154,11 @@ function selectPart(id, focus = false) {
 
 function renderInspector() {
   if (state.mode === 'connectome') { renderConnectome(); return; }
+  if (state.mode === 'tractography') { renderFiberInspector(); return; }
   const p = parts.find(p => p.id === state.selected);
   if (!p) { $('#inspector-content').innerHTML = '<div class="inspector-empty">뇌 또는 목록에서 구조를 선택하세요.</div>'; return; }
   const approximate = p.source !== 'Z-Anatomy / BodyParts3D';
-  $('#inspector-content').innerHTML = `<div class="detail-kicker"><span class="structure-dot" style="--dot:${CATEGORIES[p.category].color}"></span>${CATEGORIES[p.category].name}<span>${sideName(p.side)}</span></div><h2 class="detail-name">${escape(partName(p))}</h2><p class="latin-name">${escape(p.label)}</p><div class="detail-divider"></div><span class="eyebrow">FUNCTION & ANATOMY</span><h3>이 구조의 역할</h3><p class="summary">${escape(partSummary(p))}</p><div class="selection-actions"><button id="focus-part">${icon('focus', 16)} 가까이</button><button id="isolate-part" class="${state.isolate ? 'active' : ''}" aria-pressed="${state.isolate}">${icon('eye', 16)} 단독 보기</button><button id="hide-part">${icon('hide', 16)} 숨기기</button></div><div class="fact-row"><span>영역</span><strong>${escape(regionName(p.parent || p.region))}</strong></div><div class="fact-row"><span>반구</span><strong>${sideName(p.side)}</strong></div>${approximate ? `<p class="method-note"><strong>영상 아틀라스 기반 근사 형상</strong>${escape(p.source)}에서 유래했습니다. 해부 모델에 맞춘 위치·경로에는 오차가 있습니다.</p>` : ''}<section class="layers"><span class="eyebrow">LAYERS</span><h3>표시할 구조</h3>${Object.entries(CATEGORIES).map(([id, c]) => `<label class="layer-row"><span><i style="background:${c.color}"></i>${c.name}</span><input type="checkbox" data-layer="${id}" ${state.categories.has(id) ? 'checked' : ''}/></label>`).join('')}</section><div class="detail-source"><span>모델 출처</span><p>${escape(p.source)}</p><a href="${SOURCES.anatomy.url}" target="_blank" rel="noreferrer">신경해부학 배경 읽기 ↗</a><a href="${SOURCES.atlas.url}" target="_blank" rel="noreferrer">형상·명칭의 출처 ↗</a></div>`;
+  $('#inspector-content').innerHTML = `<div class="detail-kicker"><span class="structure-dot" style="--dot:${CATEGORIES[p.category].color}"></span>${CATEGORIES[p.category].name}<span>${sideName(p.side)}</span></div><h2 class="detail-name">${escape(partName(p))}</h2><p class="latin-name">${escape(p.label)}</p><div class="detail-divider"></div><span class="eyebrow">FUNCTION & ANATOMY</span><h3>이 구조의 역할</h3><p class="summary">${escape(partSummary(p))}</p><div class="selection-actions"><button id="focus-part">${icon('focus', 16)} 가까이</button><button id="isolate-part" class="${state.isolate ? 'active' : ''}" aria-pressed="${state.isolate}">${icon('eye', 16)} 단독 보기</button><button id="hide-part">${icon('hide', 16)} 숨기기</button></div><div class="fact-row"><span>영역</span><strong>${escape(regionName(p.parent || p.region))}</strong></div><div class="fact-row"><span>반구</span><strong>${sideName(p.side)}</strong></div>${approximate ? `<p class="method-note"><strong>영상 아틀라스 기반 근사 형상</strong>${escape(p.source)}에서 유래했습니다. 해부 모델에 맞춘 위치·경로에는 오차가 있습니다.</p>` : ''}${bundles.some(b => b.modelNodeIds.includes(p.id)) ? `<button class="fiber-link" data-open-fiber="${bundles.find(b => b.modelNodeIds.includes(p.id)).id}">섬유 추적으로 보기</button>` : ''}<div class="detail-source"><span>모델 출처</span><p>${escape(p.source)}</p><a href="${SOURCES.anatomy.url}" target="_blank" rel="noreferrer">신경해부학 배경 읽기 ↗</a><a href="${SOURCES.atlas.url}" target="_blank" rel="noreferrer">형상·명칭의 출처 ↗</a></div>`;
 }
 
 function selectTract(id) {
@@ -129,6 +166,8 @@ function selectTract(id) {
   if (!tract) return;
   state.tract = id; state.region = null; state.regionQuery = '';
   state.selected = tract.modelMapping?.modelNodeId ?? null;
+  state.fiber = bundleForTract(tract, bundles)?.id ?? null;
+  if (state.fiber) state.fiberHidden.delete(state.fiber);
   state.isolate = false;
   if (state.hemisphere !== 'both') state.hemisphere = tract.side;
   if (state.selected != null) { const p = parts.find(p => p.id === state.selected); state.categories.add(p.category); state.hidden.delete(p.id); }
@@ -141,7 +180,7 @@ function renderConnectome() {
   const mapped = t.modelMapping;
   const knowledge = tractKnowledge(t);
   const title = knowledge ? partName(knowledge) : t.fullName || t.code;
-  $('#inspector-content').innerHTML = `<div class="detail-kicker">STRUCTURAL CONNECTOME<span>${sideName(t.side)}</span></div><h2 class="detail-name">${escape(title)}</h2><p class="latin-name">${escape(t.fullName || '원본 표의 약어를 보존했습니다.')} · ${escape(t.id)}</p>${knowledge ? `<p class="summary compact">${escape(partSummary(knowledge))}</p>` : ''}<p class="method-note">${mapped ? (mapped.modelSource.startsWith('HCP') ? '3D에는 이름·좌우가 대응하는 HCP 유래 근사 경로를 표시합니다.' : '3D는 별도 Z-Anatomy 뇌궁 형상입니다. HCP 경로와 동일한 형상은 아닙니다.') : '이 경로의 대응 3D 형상은 없습니다. 아래 원자료 표에서 연결 영역을 탐색할 수 있습니다.'}</p><div class="probability-heading"><span class="eyebrow">TRACT ↔ CORTICAL REGION</span><h3>피질 영역별 겹침 확률</h3><p>신경로 마스크가 해당 영역과 겹친 비율입니다. 연결 강도나 신호 방향을 의미하지 않습니다.</p></div><label class="threshold-label" for="threshold">최소 표시 확률 <strong id="threshold-value">${Math.round(state.threshold * 100)}%</strong></label><input type="range" id="threshold" min="0" max="100" step="1" value="${Math.round(state.threshold * 100)}"/><label class="region-search">${icon('search', 16)}<input id="region-search" type="search" placeholder="HCP-MMP 영역 ID 검색" aria-label="HCP-MMP 영역 ID 검색" value="${escape(state.regionQuery)}"/></label><div id="region-summary"></div><div id="region-connections"></div><div id="region-detail"></div><p class="table-note">영역 ID는 ${sideName(t.side)} HCP-MMP 구획입니다. 이랑 형상에 일대일 대응하지 않습니다. 0% 임계값에서는 원본의 0도 표시합니다.</p><a class="data-download" href="data/tract_to_region_connectome_MMP.xlsx" download>${icon('download',16)} 원본 확률 표 다운로드</a>`;
+  $('#inspector-content').innerHTML = `<div class="representation-switch" role="group" aria-label="경로 표현"><button data-representation="streamlines" aria-pressed="${state.representation === 'streamlines'}">섬유 추적</button><button data-representation="anatomy" aria-pressed="${state.representation === 'anatomy'}">해부 모형</button></div><div class="detail-kicker">STRUCTURAL CONNECTOME<span>${sideName(t.side)}</span></div><h2 class="detail-name">${escape(title)}</h2><p class="latin-name">${escape(t.fullName || '원본 표의 약어를 보존했습니다.')} · ${escape(t.id)}</p>${knowledge ? `<p class="summary compact">${escape(partSummary(knowledge))}</p>` : ''}<p class="method-note">${state.representation === 'streamlines' ? (state.fiber ? 'HCP1065 집단 평균의 원본 궤적을 표시합니다. 해부 모형과 별도의 영상 좌표계입니다.' : '원본 약어에 대응하는 궤적을 확인하지 못했습니다. 다른 경로로 대체하지 않습니다.') : mapped ? (mapped.modelSource.startsWith('HCP') ? '3D에는 이름·좌우가 대응하는 HCP 유래 근사 경로를 표시합니다.' : '3D는 별도 Z-Anatomy 뇌궁 형상입니다. HCP 경로와 동일한 형상은 아닙니다.') : '이 경로의 대응 3D 형상은 없습니다. 아래 원자료 표에서 연결 영역을 탐색할 수 있습니다.'}</p><div class="probability-heading"><span class="eyebrow">TRACT ↔ CORTICAL REGION</span><h3>피질 영역별 겹침 확률</h3><p>신경로 마스크가 해당 영역과 겹친 비율입니다. 연결 강도나 신호 방향을 의미하지 않습니다.</p></div><label class="threshold-label" for="threshold">최소 표시 확률 <strong id="threshold-value">${Math.round(state.threshold * 100)}%</strong></label><input type="range" id="threshold" min="0" max="100" step="1" value="${Math.round(state.threshold * 100)}"/><label class="region-search">${icon('search', 16)}<input id="region-search" type="search" placeholder="HCP-MMP 영역 ID 검색" aria-label="HCP-MMP 영역 ID 검색" value="${escape(state.regionQuery)}"/></label><div id="region-summary"></div><div id="region-connections"></div><div id="region-detail"></div><p class="table-note">영역 ID는 ${sideName(t.side)} HCP-MMP 구획입니다. 이랑 형상에 일대일 대응하지 않습니다. 0% 임계값에서는 원본의 0도 표시합니다.</p><a class="data-download" href="data/tract_to_region_connectome_MMP.xlsx" download>${icon('download',16)} 원본 확률 표 다운로드</a>`;
   renderConnections();
 }
 
@@ -158,6 +197,43 @@ function renderConnections() {
   } else $('#region-detail').innerHTML = '';
 }
 
+const fiberGroups = { association: '연합 섬유', projection: '투사 섬유', commissural: '맞교차 섬유', cerebellum: '소뇌 연결' };
+
+function renderFiberList() {
+  $('#library-kicker').textContent = 'HCP1065 TRACTOGRAPHY';
+  $('#library-title').textContent = '백질 섬유 탐색';
+  $('#library-total').textContent = bundles.length;
+  $('#search').placeholder = '신경로 이름·약어 검색';
+  $('#category-filters').hidden = false;
+  $('#list-foot').textContent = '집단 평균 · 원본 궤적 표본';
+  const query = state.query.toLocaleLowerCase();
+  const results = bundles.filter(b => (state.hemisphere === 'both' || ['median', 'both'].includes(b.side) || b.side === state.hemisphere) && [b.id, b.ko, b.en, b.summary, b.summaryEn].join(' ').toLocaleLowerCase().includes(query));
+  $('#list-caption').textContent = `${results.length} ${ui('개 섬유 다발')}`;
+  $('#structure-list').innerHTML = results.length ? Object.entries(fiberGroups).map(([group, name]) => {
+    const children = results.filter(b => b.group === group);
+    if (!children.length) return '';
+    const all = bundles.filter(b => b.group === group), visible = all.filter(b => !state.fiberHidden.has(b.id)).length;
+    const open = state.fiberExpanded.has(group) || Boolean(query);
+    return `<section class="tree-group"><div class="tree-heading"><input type="checkbox" data-fiber-group="${group}" aria-label="${ui(name)} ${ui('전체 표시')}" ${visible === all.length ? 'checked' : ''} data-mixed="${visible > 0 && visible < all.length}"/><button data-fiber-expand="${group}" aria-expanded="${open}"><span>${open ? '▾' : '▸'} ${ui(name)}</span><small>${visible}/${all.length}</small></button></div>${open ? children.map(b => `<div class="tree-row"><input type="checkbox" data-fiber-visible="${b.id}" aria-label="${ui('표시')}: ${escape(partName(b))} · ${sideName(b.side)}" ${!state.fiberHidden.has(b.id) ? 'checked' : ''}/><button class="structure ${state.fiber === b.id ? 'selected' : ''}" data-fiber="${b.id}" aria-pressed="${state.fiber === b.id}"><span><strong>${escape(partName(b))}</strong><small>${b.code} · ${sideName(b.side)}</small></span></button></div>`).join('') : ''}</section>`;
+  }).join('') : `<p class="empty">${ui('검색 결과가 없습니다.')}</p>`;
+  document.querySelectorAll('[data-mixed]').forEach(input => { input.indeterminate = input.dataset.mixed === 'true'; });
+}
+
+function selectFiber(id) {
+  const bundle = bundles.find(b => b.id === id);
+  if (!bundle) return;
+  state.fiber = id;
+  state.fiberHidden.delete(id);
+  state.fiberExpanded.add(bundle.group);
+  if (state.hemisphere !== 'both' && !['median', 'both'].includes(bundle.side)) state.hemisphere = bundle.side;
+  sync(); renderList(); renderInspector(); localize();
+}
+
+function renderFiberInspector() {
+  const b = bundles.find(b => b.id === state.fiber);
+  $('#inspector-content').innerHTML = `<div class="detail-kicker">HCP1065 STREAMLINES</div><h2 class="detail-name">${b ? escape(partName(b)) : ui('전체 백질 섬유')}</h2>${b ? `<p class="latin-name">${b.id} · ${sideName(b.side)}</p><p class="summary">${escape(partSummary(b))}</p><div class="selection-actions"><button id="focus-part">${icon('focus', 16)} 가까이</button><button id="fiber-isolate" aria-pressed="${!state.fiberContext}">${icon('eye', 16)} 단독 보기</button></div><div class="fact-row"><span>원본 궤적 수</span><strong>${b.sourceCount.toLocaleString('en-US')}</strong></div><div class="fact-row"><span>제공하는 궤적 표본</span><strong>${b.count.toLocaleString('en-US')}</strong></div>${b.tractId ? `<button class="fiber-link" data-open-connectome="${b.tractId}">피질 연결 확률 보기</button>` : ''}` : `<p class="summary">전체 섬유에서 다발을 클릭하거나 왼쪽 목록에서 선택하세요.</p>`}<p class="method-note">HCP1065 집단 평균의 원본 궤적을 표시합니다. 해부 모형과 별도의 영상 좌표계입니다.</p><h3>방향 색상 읽기</h3><p class="summary">빨강은 좌우, 초록은 앞뒤, 파랑은 위아래 방향을 나타냅니다. 중간 방향은 혼합색입니다. 색은 신호의 진행 방향이나 연결 강도가 아닙니다.</p><p class="method-note">각 선은 확산 MRI에서 재구성한 궤적이며 축삭 하나를 뜻하지 않습니다. 실제 신경 분지·시냅스를 직접 측정한 자료가 아니며, 개인의 DTI 검사 결과도 아닙니다.</p><div class="detail-source"><span>원자료</span><a href="https://brain.labsolver.org/hcp_trk_atlas.html" target="_blank" rel="noreferrer">HCP1065 · Yeh 2022 ↗</a><a href="TRACTOGRAPHY.md" target="_blank">섬유 자료의 처리 방법 ↗</a></div>`;
+}
+
 function setMode(mode) {
   state.mode = mode; state.query = ''; state.isolate = false; state.hidden.clear(); $('#search').value = '';
   document.body.dataset.mode = mode;
@@ -165,7 +241,16 @@ function setMode(mode) {
   $('#connection-graph').hidden = mode !== 'connectome';
   $('#stage-kicker').textContent = mode === 'connectome' ? 'STRUCTURAL CONNECTIVITY' : 'HUMAN NEUROANATOMY';
   $('#stage-title').innerHTML = mode === 'connectome' ? '뇌를 잇는<br/>백질의 경로.' : '구조를 이해하고,<br/>연결을 발견하세요.';
-  if (mode === 'connectome') {
+  if (mode === 'tractography') {
+    state.fiberContext = true;
+    state.fiberHidden.clear();
+    if (!state.fiber) state.fiber = 'CC';
+    const bundle = bundles.find(b => b.id === state.fiber);
+    if (state.hemisphere !== 'both' && !['median', 'both'].includes(bundle?.side) && bundle?.side !== state.hemisphere) state.fiber = bundles.find(b => b.code === bundle.code && b.side === state.hemisphere)?.id ?? 'CC';
+    $('#stage-kicker').textContent = 'DIFFUSION MRI · HCP1065';
+    $('#stage-title').innerHTML = '백질의 섬유를,<br/>더 가까이.';
+    selectFiber(state.fiber);
+  } else if (mode === 'connectome') {
     state.categories = new Set(Object.keys(CATEGORIES)); state.opacity = 0.06;
     const currentTract = connectome.tracts.find(t => t.id === state.tract);
     if (state.hemisphere !== 'both' && currentTract.side !== state.hemisphere) state.tract = connectome.tracts.find(t => t.code === currentTract.code && t.side === state.hemisphere).id;
@@ -182,6 +267,12 @@ $('#app').addEventListener('click', event => {
   const b = event.target.closest('button'); if (!b) return;
   if (b.dataset.language) { setLanguage(b.dataset.language); sync(); renderCategories(); renderList(); renderInspector(); }
   if (b.dataset.part) selectPart(Number(b.dataset.part));
+  if (b.dataset.fiber) selectFiber(b.dataset.fiber);
+  if (b.dataset.openFiber) { state.fiber = b.dataset.openFiber; setMode('tractography'); }
+  if (b.dataset.openConnectome) { state.tract = b.dataset.openConnectome; state.representation = 'streamlines'; setMode('connectome'); }
+  if (b.dataset.representation) { state.representation = b.dataset.representation; sync(); renderList(); renderInspector(); }
+  if (b.dataset.expand) { const key = b.dataset.expand; if (state.expanded.has(key)) state.expanded.delete(key); else state.expanded.add(key); renderList(); }
+  if (b.dataset.fiberExpand) { const key = b.dataset.fiberExpand; if (state.fiberExpanded.has(key)) state.fiberExpanded.delete(key); else state.fiberExpanded.add(key); renderList(); }
   if (b.dataset.tract) selectTract(b.dataset.tract);
   if (b.dataset.mode && connectome) setMode(b.dataset.mode);
   if (b.dataset.category) { state.category = b.dataset.category; renderCategories(); renderList(); }
@@ -191,17 +282,34 @@ $('#app').addEventListener('click', event => {
     if (state.mode === 'connectome' && state.hemisphere !== 'both') {
       const t = connectome.tracts.find(t => t.id === state.tract);
       selectTract(connectome.tracts.find(x => x.code === t.code && x.side === state.hemisphere).id);
+    } else if (state.mode === 'tractography') {
+      const bundle = bundles.find(b => b.id === state.fiber);
+      if (bundle && state.hemisphere !== 'both' && !['median', 'both'].includes(bundle.side)) state.fiber = bundles.find(b => b.code === bundle.code && b.side === state.hemisphere)?.id ?? null;
+      sync(); renderList(); renderInspector();
     } else {
       const p = parts.find(p => p.id === state.selected);
-      if (p && state.hemisphere !== 'both' && p.side !== 'median' && p.side !== state.hemisphere) state.selected = parts.find(x => x.label === p.label && x.side === state.hemisphere)?.id ?? null;
+      if (p && state.hemisphere !== 'both' && p.side !== 'median' && p.side !== state.hemisphere) {
+        const counterpart = parts.find(x => x.label === p.label && x.side === state.hemisphere);
+        if (counterpart) selectPart(counterpart.id); else state.selected = null;
+      }
       sync(); renderList(); renderInspector();
     }
   }
   if (b.dataset.region) { state.region = b.dataset.region; renderConnections(); }
   if (b.id === 'focus-part') scene?.focus(state.selected);
+  if (b.id === 'fiber-isolate') { state.fiberContext = !state.fiberContext; sync(); renderInspector(); }
+  if (b.id === 'fiber-all') { if (state.mode !== 'tractography') setMode('tractography'); state.fiber = null; state.fiberContext = true; sync(); renderList(); renderInspector(); scene?.view('oblique'); }
+  if (b.id === 'retry-fibers') scene?.retryFibers();
+  if (b.id === 'show-all' || b.id === 'hide-all') {
+    const show = b.id === 'show-all';
+    if (state.mode === 'tractography') state.fiberHidden = new Set(show ? [] : bundles.map(b => b.id));
+    else { state.categories = new Set(show ? Object.keys(CATEGORIES) : []); state.hidden.clear(); }
+    sync(); renderList();
+  }
+  if (b.id === 'collapse-all') { state.expanded.clear(); state.fiberExpanded.clear(); renderList(); }
   if (b.id === 'isolate-part') { state.isolate = !state.isolate; sync(); renderInspector(); if (state.isolate) scene?.focus(state.selected); else scene?.view('oblique'); }
   if (b.id === 'hide-part') { state.hidden.add(state.selected); state.selected = null; state.isolate = false; sync(); renderList(); renderInspector(); }
-  if (b.id === 'reset') { state.hemisphere = 'both'; state.category = 'all'; state.regionQuery = ''; state.threshold = 0.05; setMode(state.mode); renderCategories(); }
+  if (b.id === 'reset') { state.hemisphere = 'both'; state.category = 'all'; state.regionQuery = ''; state.threshold = 0.05; state.fiberDensity = 1; state.fiberContext = true; state.fiberHidden.clear(); setMode(state.mode); renderCategories(); }
   if (b.id === 'clear-search') { state.query = ''; state.category = 'all'; $('#search').value = ''; renderCategories(); renderList(); }
   if (b.id === 'zoom-in') scene?.zoom(0.8);
   if (b.id === 'zoom-out') scene?.zoom(1.25);
@@ -210,9 +318,23 @@ $('#app').addEventListener('click', event => {
   localize();
 });
 $('#app').addEventListener('change', event => {
-  if (event.target.dataset.layer) { const layer = event.target.dataset.layer; if (event.target.checked) state.categories.add(layer); else state.categories.delete(layer); sync(); }
+  const input = event.target;
+  if (input.dataset.layer) { const layer = input.dataset.layer; if (input.checked) { state.categories.add(layer); parts.filter(p => p.category === layer).forEach(p => state.hidden.delete(p.id)); } else state.categories.delete(layer); sync(); renderList(); }
+  if (input.dataset.visible) {
+    const id = Number(input.dataset.visible), p = parts.find(p => p.id === id);
+    if (input.checked) {
+      if (!state.categories.has(p.category)) parts.filter(x => x.category === p.category).forEach(x => state.hidden.add(x.id));
+      state.categories.add(p.category); state.hidden.delete(id);
+    } else state.hidden.add(id);
+    sync(); renderList();
+  }
+  if (input.dataset.fiberVisible) { if (input.checked) state.fiberHidden.delete(input.dataset.fiberVisible); else state.fiberHidden.add(input.dataset.fiberVisible); sync(); renderList(); }
+  if (input.dataset.fiberGroup) { bundles.filter(b => b.group === input.dataset.fiberGroup).forEach(b => { if (input.checked) state.fiberHidden.delete(b.id); else state.fiberHidden.add(b.id); }); sync(); renderList(); }
+  if (input.id === 'fiber-context') { state.fiberContext = input.checked; sync(); renderInspector(); localize(); }
+  localize();
 });
 $('#app').addEventListener('input', event => {
+  if (event.target.id === 'fiber-density') { state.fiberDensity = Number(event.target.value) / 100; sync(); }
   if (event.target.id === 'threshold') { state.threshold = Number(event.target.value) / 100; $('#threshold-value').textContent = `${event.target.value}%`; renderConnections(); }
   if (event.target.id === 'region-search') { state.regionQuery = event.target.value; renderConnections(); }
   localize();
@@ -222,7 +344,8 @@ document.addEventListener('keydown', e => { if (e.key === '/' && !['INPUT', 'TEX
 async function getJSON(url) { const response = await fetch(`${import.meta.env.BASE_URL}${url}`); if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`); return response.json(); }
 async function start() {
   try {
-    [parts, connectome] = await Promise.all([getJSON('models/parts.json'), getJSON('data/hcp-connectome.json')]);
+    [parts, connectome, fiberManifest] = await Promise.all([getJSON('models/parts.json'), getJSON('data/hcp-connectome.json'), getJSON('tractography/manifest.json')]);
+    bundles = makeCatalogue(fiberManifest, parts, connectome);
     renderCategories(); renderList(); renderInspector(); localize();
     const { createScene } = await import('./scene.js');
     scene = await createScene($('#scene-host'), parts, {
@@ -230,8 +353,14 @@ async function start() {
         if (state.mode === 'connectome') { const t = connectome.tracts.find(t => t.modelMapping?.modelNodeId === id); if (t) selectTract(t.id); else { setMode('anatomy'); selectPart(id); } }
         else selectPart(id);
       },
-      onProgress(value) { $('#load-progress').value = value; $('#load-label').textContent = value < 100 ? `해부 모델 불러오는 중 · ${value}%` : '준비 완료'; },
-    });
+      onProgress(value) { $('#load-progress').value = value; $('#load-label').textContent = ui(value < 100 ? `해부 모델 불러오는 중 · ${value}%` : '준비 완료'); },
+      onFiberStatus(status) { fiberStatus = status; $('#scene-host').dataset.fiberState = status; showFiberStatus(); },
+      onFiberSelect(id) {
+        const b = bundles.find(b => b.id === id);
+        if (state.mode === 'connectome' && b.tractId) selectTract(b.tractId);
+        else { if (state.mode !== 'tractography') setMode('tractography'); selectFiber(id); }
+      },
+    }, { ...fiberManifest, bundles });
     sync(); $('.load-state').hidden = true; document.body.dataset.ready = 'true'; localize();
   } catch (error) {
     console.error('Atlas load failed', error);

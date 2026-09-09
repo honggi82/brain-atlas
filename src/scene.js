@@ -5,8 +5,9 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { PointerTap } from './pointer-tap.js';
 import { CATEGORIES } from './knowledge.js';
 import { partName, ui } from './i18n.js';
+import { createTractLayer } from './tract-layer.js';
 
-export async function createScene(host, parts, callbacks) {
+export async function createScene(host, parts, callbacks, fiberManifest) {
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setClearColor(0xf5f4f0, 0);
@@ -14,7 +15,7 @@ export async function createScene(host, parts, callbacks) {
   renderer.toneMapping = T.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
   const canvas = renderer.domElement;
-  canvas.setAttribute('aria-label', '뇌 3D 해부도. 드래그로 회전, 휠로 확대, 구조를 클릭해 선택합니다.');
+  canvas.setAttribute('aria-label', ui('뇌 3D 해부도. 드래그로 회전, 휠로 확대, 구조를 클릭해 선택합니다.'));
   canvas.setAttribute('role', 'img');
   host.prepend(canvas);
   const scene = new T.Scene();
@@ -32,12 +33,19 @@ export async function createScene(host, parts, callbacks) {
   }
   const model = new T.Group();
   scene.add(model);
+  const fibers = createTractLayer(fiberManifest, {
+    onChange() { dirty = true; const stats = fibers.stats(); host.dataset.visibleFiberBundles = stats.bundles; host.dataset.visibleFibers = stats.streamlines; },
+    onReady() { if (fiberMode) view('oblique'); },
+    onDetailReady() { if (fiberMode && current?.fiber) fit(fibers.bounds(current.fiber)); },
+    onStatus: callbacks.onFiberStatus,
+  });
+  scene.add(fibers.root);
   const draco = new DRACOLoader().setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
   draco.setWorkerLimit(2);
   const loader = new GLTFLoader().setDRACOLoader(draco);
   const meshes = new Map();
   const partMap = new Map(parts.map(p => [p.id, p]));
-  let disposed = false, dirty = true, frame, current, loaded = false;
+  let disposed = false, dirty = true, frame, current, loaded = false, fiberMode = false;
   let fullBox, front = new T.Vector3(0, 0, 1), left = new T.Vector3(1, 0, 0);
   const raycaster = new T.Raycaster();
   const pointer = new T.Vector2();
@@ -52,7 +60,7 @@ export async function createScene(host, parts, callbacks) {
     if (!dirty) return;
     renderer.render(scene, camera);
     dirty = false;
-    const pieces = meshes.get(current?.selected);
+    const pieces = fiberMode ? (fibers.selected() ? [fibers.selected()] : null) : meshes.get(current?.selected);
     if (pieces?.some(mesh => mesh.visible)) {
       const point = bounds(pieces).getCenter(new T.Vector3()).project(camera);
       floating.hidden = point.z > 1 || Math.abs(point.x) > 0.95 || Math.abs(point.y) > 0.94;
@@ -77,7 +85,7 @@ export async function createScene(host, parts, callbacks) {
     return box;
   }
 
-  function fit(box = fullBox, direction) {
+  function fit(box = fiberMode ? fibers.bounds() : fullBox, direction) {
     if (!box || box.isEmpty()) return;
     const center = box.getCenter(new T.Vector3());
     const vertical = T.MathUtils.degToRad(camera.fov / 2);
@@ -85,7 +93,7 @@ export async function createScene(host, parts, callbacks) {
     const right = new T.Vector3().crossVectors(camera.up, dir).normalize();
     const up = new T.Vector3().crossVectors(dir, right).normalize();
     let distance = 0.42;
-    const boxes = box === fullBox ? [...meshes.entries()].filter(([id]) => partMap.get(id).category !== 'tracts').map(([, pieces]) => bounds(pieces)) : [box];
+    const boxes = !fiberMode && box === fullBox ? [...meshes.entries()].filter(([id]) => partMap.get(id).category !== 'tracts').map(([, pieces]) => bounds(pieces)) : [box];
     for (const target of boxes) for (const x of [target.min.x, target.max.x]) for (const y of [target.min.y, target.max.y]) for (const z of [target.min.z, target.max.z]) {
       const offset = new T.Vector3(x, y, z).sub(center);
       distance = Math.max(distance, offset.dot(dir) + Math.max(Math.abs(offset.dot(up)) / Math.tan(vertical), Math.abs(offset.dot(right)) / (Math.tan(vertical) * camera.aspect)) * 1.08);
@@ -98,6 +106,14 @@ export async function createScene(host, parts, callbacks) {
 
   function update(state) {
     current = state;
+    const previousMode = fiberMode;
+    fiberMode = state.mode === 'tractography' || (state.mode === 'connectome' && state.representation === 'streamlines');
+    model.visible = !fiberMode;
+    scene.background = fiberMode ? new T.Color('#101b25') : null;
+    fibers.update(state);
+    host.dataset.renderer = fiberMode ? 'streamlines' : 'anatomy';
+    if (!fiberMode) { host.dataset.visibleFibers = 0; host.dataset.visibleFiberBundles = 0; }
+    if (previousMode !== fiberMode) view('oblique');
     canvas.setAttribute('aria-label', ui('뇌 3D 해부도. 드래그로 회전, 휠로 확대, 구조를 클릭해 선택합니다.'));
     for (const [id, pieces] of meshes) {
       const part = partMap.get(id);
@@ -120,6 +136,7 @@ export async function createScene(host, parts, callbacks) {
         mesh.renderOrder = active ? 2 : opacity < 0.95 ? 1 : 0;
       }
     }
+    host.dataset.visibleStructures = fiberMode ? 0 : [...meshes.values()].filter(pieces => pieces.some(m => m.visible)).length;
     dirty = true;
   }
 
@@ -127,6 +144,7 @@ export async function createScene(host, parts, callbacks) {
     const rect = canvas.getBoundingClientRect();
     pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, 1 - (event.clientY - rect.top) / rect.height * 2);
     raycaster.setFromCamera(pointer, camera);
+    if (fiberMode) return fibers.pick(raycaster);
     const targets = [...meshes.values()].flat().filter(m => m.visible && m.material.opacity > 0.2);
     return raycaster.intersectObjects(targets, false)[0]?.object.userData.nodeId;
   }
@@ -138,13 +156,13 @@ export async function createScene(host, parts, callbacks) {
     canvas.style.cursor = id == null ? 'grab' : 'pointer';
     hover.hidden = id == null;
     if (id != null) {
-      hover.textContent = partName(partMap.get(id));
+      hover.textContent = partName(fiberMode ? fiberManifest.bundles.find(b => b.id === id) : partMap.get(id));
       const rect = canvas.getBoundingClientRect();
       hover.style.left = `${Math.min(host.clientWidth - 170, Math.max(8, e.clientX - rect.left + 12))}px`;
       hover.style.top = `${Math.max(8, e.clientY - rect.top - 34)}px`;
     }
   };
-  const up = e => { if (tap.up(e.pointerId, e.clientX, e.clientY) && loaded) { const id = pick(e); if (id != null) callbacks.onSelect(id); } };
+  const up = e => { if (tap.up(e.pointerId, e.clientX, e.clientY) && loaded) { const id = pick(e); if (id != null) { if (fiberMode) callbacks.onFiberSelect(id); else callbacks.onSelect(id); } } };
   const cancel = e => tap.cancel(e.pointerId);
   const leave = () => { hover.hidden = true; };
   const listeners = { pointerdown: down, pointermove: move, pointerup: up, pointercancel: cancel, pointerleave: leave };
@@ -157,6 +175,7 @@ export async function createScene(host, parts, callbacks) {
     observer.disconnect();
     controls.dispose();
     draco.dispose();
+    fibers.dispose();
     for (const [name, fn] of Object.entries(listeners)) canvas.removeEventListener(name, fn);
     scene.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
     renderer.dispose();
@@ -213,14 +232,19 @@ export async function createScene(host, parts, callbacks) {
     render();
   } catch (error) { dispose(); throw error; }
 
+  function view(view) {
+    const anterior = fiberMode ? new T.Vector3(0, 0, -1) : front;
+    const lateral = fiberMode ? new T.Vector3(-1, 0, 0) : left;
+    const dirs = { front: anterior, back: anterior.clone().negate(), left: lateral, right: lateral.clone().negate(), top: new T.Vector3(0, 1, 0.001), oblique: anterior.clone().addScaledVector(lateral, 1.4).add(new T.Vector3(0, 0.35, 0)).normalize() };
+    fit(fiberMode ? fibers.bounds() : fullBox, dirs[view] || dirs.oblique);
+  }
+
   return {
     update,
     dispose,
-    focus(id) { const pieces = meshes.get(id); if (pieces) fit(bounds(pieces)); },
-    view(view) {
-      const dirs = { front, back: front.clone().negate(), left, right: left.clone().negate(), top: new T.Vector3(0, 1, 0.001), oblique: front.clone().addScaledVector(left, 1.4).add(new T.Vector3(0, 0.35, 0)).normalize() };
-      fit(fullBox, dirs[view] || dirs.oblique);
-    },
+    focus(id) { if (fiberMode) fit(fibers.bounds(current.fiber)); else { const pieces = meshes.get(id); if (pieces) fit(bounds(pieces)); } },
+    view,
+    retryFibers() { fibers.retry(); },
     zoom(factor) { camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target); controls.update(); dirty = true; },
     image() { renderer.render(scene, camera); return canvas.toDataURL('image/png'); },
   };

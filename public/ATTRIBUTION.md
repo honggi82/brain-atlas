@@ -24,7 +24,11 @@ The registered additions are educational approximations. Brain Project reports a
 
 The full upstream licence notice, including its separate code/asset licences, is preserved in `licenses/brainproject.txt`.
 
-## Structural tract-to-region connectome
+## Detailed streamline assets
+
+`tractography/*.bin.gz` and `tractography/manifest.json` are derivatives of the **HCP1065 population-averaged tractography atlas**, Fang-Cheng Yeh (2022), under **CC BY-SA 4.0**. The HCP acknowledgement below applies. The viewer selects 68 named bundles and subsets original trajectories, simplifies them within 0.25 mm in native space, adds orientation colouring and uses a separate renderer without anatomical registration. Full source hashes, processing details, scope and validation are in [TRACTOGRAPHY.md](TRACTOGRAPHY.md).
+
+## Structural tract-to-region connectome data
 
 **Fang-Cheng Yeh (2022).** Population-based tract-to-region connectome of the human brain and its hierarchical topology. *Nature Communications* 13, 4933. https://doi.org/10.1038/s41467-022-32595-4
 

@@ -35,6 +35,7 @@
 - Verify the remote repository is PRIVATE after uploading. Do not deploy publicly before review approval.
 
 ## Implementation notes
+- Upgrade requested after review: detailed HCP source streamlines and unified left-side category/part visibility. See TRACTOGRAPHY_PLAN.md and public/TRACTOGRAPHY.md. The original app remains in ../brain-atlas; 68 native-space bundles are added separately from the anatomical illustration, with 48 verified matrix mappings and 4 unresolved columns.
 - Initial map delivered in conversation before implementation. Public hosting remains a deliberate final approval step.
 - The HCP1065 table has 180 rows and 52 tract columns, with all 9,360 numeric values preserved. It is a tract-to-region bipartite connectome, not a region-to-region strength matrix. MMP functional parcels are not mapped arbitrarily onto anatomical gyri.
 - 38 tract columns have semantic name-and-side mappings to model structures; 14 are table-only. Approximate tract geometry and source probability values are distinct layers.
