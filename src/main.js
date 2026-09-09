@@ -1,9 +1,11 @@
 import './style.css';
 import './tractography.css';
+import './lobes.css';
 import { CATEGORIES, SOURCES, searchParts, tractKnowledge } from './knowledge.js';
 import { connectionsForTract, connectionsForRegion, percent } from './connectome.js';
 import { getLanguage, setLanguage, localize, ui, partName, partSummary, regionName } from './i18n.js';
 import { makeCatalogue, bundleForTract } from './streamlines.js';
+import { LOBES, lobeForPart, partsInLobe } from './lobes.js';
 
 const icon = (name, size = 20) => {
   const paths = {
@@ -30,6 +32,7 @@ const state = {
   categories: new Set(Object.keys(CATEGORIES).filter(k => k !== 'tracts' && k !== 'white_matter')),
   hidden: new Set(), isolate: false, query: '', category: 'all', tract: 'L_AF', threshold: 0.05,
   regionQuery: '', region: null,
+  selectedLobe: null, lobeExpanded: new Set(),
   expanded: new Set(), fiberExpanded: new Set(['commissural']),
   representation: 'streamlines', fiber: 'CC', fiberContext: true, fiberDensity: 1, fiberHidden: new Set(),
 };
@@ -52,6 +55,7 @@ $('#app').innerHTML = `
     </aside>
     <section class="visual" aria-label="3D 탐색 화면">
       <div class="stage-heading"><div><span class="eyebrow" id="stage-kicker">HUMAN NEUROANATOMY</span><h2 id="stage-title">구조를 이해하고,<br/>연결을 발견하세요.</h2></div><span class="view-tag" id="view-tag">좌측 사선 보기</span></div>
+      <div id="lobe-legend" class="lobe-legend" role="group" aria-label="뇌엽 색상 · 선택하여 설명 보기"></div>
       <div id="scene-host"><div class="hover-label" hidden></div><div class="floating-label" hidden><span id="floating-name"></span><small id="floating-en"></small></div></div>
       <div class="load-state" role="status"><span class="loader-ring"></span><strong id="load-label">해부 모델 준비 중</strong><span id="load-detail">실제 분할 형상을 불러오고 있습니다.</span><progress id="load-progress" max="100" value="0"></progress></div>
       <div class="camera-bar" aria-label="카메라 방향"><button data-view="oblique" class="active" title="사선 보기">3/4</button><button data-view="front">앞</button><button data-view="back">뒤</button><button data-view="left">좌</button><button data-view="right">우</button><button data-view="top">위</button><span></span><button id="zoom-in" aria-label="확대">＋</button><button id="zoom-out" aria-label="축소">−</button></div>
@@ -72,6 +76,7 @@ $('#about-dialog .source-links').insertAdjacentHTML('beforebegin', '<h3>정밀 �
 for (const p of $('#about-dialog').querySelectorAll('p')) if (p.textContent.startsWith('HCP-MMP 영역과 해부 모델의 이랑')) p.prepend('해부 모형 기준: ');
 
 function sync() {
+  document.body.dataset.mode = state.mode;
   const fiberView = state.mode === 'tractography' || (state.mode === 'connectome' && state.representation === 'streamlines');
   document.body.dataset.fiberView = fiberView;
   $('.opacity-box').hidden = fiberView;
@@ -80,14 +85,17 @@ function sync() {
   $('#fiber-density-value').textContent = `${Math.round(state.fiberDensity * 100)}%`;
   $('#fiber-context').checked = state.fiberContext;
   scene?.update(state);
-  const part = fiberView ? bundles.find(b => b.id === state.fiber) : parts.find(p => p.id === state.selected);
+  const lobe = state.mode === 'anatomy' ? LOBES.find(l => l.id === state.selectedLobe) : null;
+  const part = lobe || (fiberView ? bundles.find(b => b.id === state.fiber) : parts.find(p => p.id === state.selected));
   $('.floating-label').hidden = !part;
-  $('#floating-name').textContent = part ? `${partName(part)} · ${sideName(part.side)}` : '';
-  $('#floating-en').textContent = '';
+  $('#floating-name').textContent = part ? `${partName(part)} · ${sideName(lobe ? state.hemisphere : part.side)}` : '';
+  $('#floating-en').textContent = !lobe && !fiberView && lobeForPart(part) ? partName(lobeForPart(part)) : '';
+  $('#lobe-legend').hidden = state.mode !== 'anatomy';
+  $('#lobe-legend').innerHTML = LOBES.map(l => `<button data-lobe="${l.id}" aria-pressed="${l.id === state.selectedLobe}" title="${escape(partSummary(l))}">${lobeSwatch(l)}${escape(partName(l))}</button>`).join('');
   $('#opacity').value = Math.round((1 - state.opacity) * 100);
   $('#opacity-value').textContent = `${$('#opacity').value}%`;
   document.querySelectorAll('[data-side]').forEach(b => { b.classList.toggle('active', b.dataset.side === state.hemisphere); b.setAttribute('aria-pressed', b.dataset.side === state.hemisphere); });
-  $('#live-status').textContent = part ? `${sideName(part.side)} ${partName(part)} 선택됨` : '선택 해제';
+  $('#live-status').textContent = part ? `${sideName(lobe ? state.hemisphere : part.side)} ${partName(part)} 선택됨` : '선택 해제';
   localize();
   showFiberStatus();
 }
@@ -122,7 +130,7 @@ function renderList() {
     }).join('') : '<p class="empty">검색 결과가 없습니다.<br/>이름이나 약어를 바꿔보세요.</p>';
     return;
   }
-  const results = searchParts(parts, state.query).filter(p => (state.category === 'all' || state.category === p.category) && (state.hemisphere === 'both' || p.side === 'median' || state.hemisphere === p.side));
+  const results = searchParts(parts.map(p => { const lobe = lobeForPart(p); return lobe ? { ...p, aliases: [p.aliases, lobe.ko, lobe.en, lobe.aliases].join(' ') } : p; }), state.query).filter(p => (state.category === 'all' || state.category === p.category) && (state.hemisphere === 'both' || p.side === 'median' || state.hemisphere === p.side));
   $('#list-caption').textContent = `${results.length}개 형상`;
   $('#structure-list').innerHTML = results.length ? Object.entries(CATEGORIES).map(([category, meta]) => {
     const children = results.filter(p => p.category === category);
@@ -130,9 +138,49 @@ function renderList() {
     const all = parts.filter(p => p.category === category);
     const visible = all.filter(p => state.categories.has(category) && !state.hidden.has(p.id)).length;
     const open = state.expanded.has(category) || Boolean(state.query);
-    return `<section class="tree-group"><div class="tree-heading"><input type="checkbox" data-layer="${category}" aria-label="${escape(ui(meta.name))} ${ui('전체 표시')}" ${visible === all.length ? 'checked' : ''} data-mixed="${visible > 0 && visible < all.length}"/><button data-expand="${category}" aria-expanded="${open}"><span>${open ? '▾' : '▸'} ${ui(meta.name)}</span><small>${visible}/${all.length}</small></button></div>${open ? children.map(p => `<div class="tree-row"><input type="checkbox" data-visible="${p.id}" aria-label="${ui('표시')}: ${escape(partName(p))} · ${sideName(p.side)}" ${state.categories.has(category) && !state.hidden.has(p.id) ? 'checked' : ''}/><button class="structure ${state.selected === p.id ? 'selected' : ''}" data-part="${p.id}" aria-pressed="${state.selected === p.id}"><span><strong>${escape(partName(p))}</strong><small>${sideName(p.side)}</small></span></button></div>`).join('') : ''}</section>`;
+    return `<section class="tree-group"><div class="tree-heading"><input type="checkbox" data-layer="${category}" aria-label="${escape(ui(meta.name))} ${ui('전체 표시')}" ${visible === all.length ? 'checked' : ''} data-mixed="${visible > 0 && visible < all.length}"/><button data-expand="${category}" aria-expanded="${open}"><span>${open ? '▾' : '▸'} ${ui(meta.name)}</span><small>${visible}/${all.length}</small></button></div>${open ? (category === 'cortex' ? renderLobeGroups(children) : children.map(partRow).join('')) : ''}</section>`;
   }).join('') : '<p class="empty">검색 결과가 없습니다.<br/>다른 이름이나 기능으로 찾아보세요.</p>';
   document.querySelectorAll('[data-mixed]').forEach(input => { input.indeterminate = input.dataset.mixed === 'true'; });
+}
+
+const lobeSwatch = lobe => `<i class="lobe-swatch" style="--lobe-color:${lobe.color}" aria-hidden="true"></i>`;
+function partRow(p) {
+  return `<div class="tree-row"><input type="checkbox" data-visible="${p.id}" aria-label="${ui('표시')}: ${escape(partName(p))} · ${sideName(p.side)}" ${state.categories.has(p.category) && !state.hidden.has(p.id) ? 'checked' : ''}/><button class="structure ${state.selected === p.id ? 'selected' : ''}" data-part="${p.id}" aria-pressed="${state.selected === p.id}"><span><strong>${escape(partName(p))}</strong><small>${sideName(p.side)}</small></span></button></div>`;
+}
+
+function renderLobeGroups(children) {
+  return LOBES.map(lobe => {
+    const matches = partsInLobe(children, lobe.id);
+    if (!matches.length) return '';
+    const all = partsInLobe(parts, lobe.id), visible = all.filter(p => state.categories.has('cortex') && !state.hidden.has(p.id)).length;
+    const open = state.lobeExpanded.has(lobe.id) || Boolean(state.query);
+    return `<section class="lobe-group" style="--lobe-color:${lobe.color}"><div class="lobe-heading"><input type="checkbox" data-lobe-visible="${lobe.id}" aria-label="${escape(partName(lobe))} ${ui('전체 표시')}" ${visible === all.length ? 'checked' : ''} data-mixed="${visible > 0 && visible < all.length}"/><button data-lobe="${lobe.id}" aria-pressed="${state.selectedLobe === lobe.id}">${lobeSwatch(lobe)}${escape(partName(lobe))}</button><button data-lobe-expand="${lobe.id}" aria-expanded="${open}" aria-label="${escape(partName(lobe))} ${ui('하위 구조')}">${open ? '▾' : '▸'}</button></div><p class="lobe-count">${visible}/${all.length} · ${ui('하위 구조')}</p>${open ? matches.map(partRow).join('') : ''}</section>`;
+  }).join('');
+}
+
+function setLobeVisible(id, visible) {
+  if (visible && !state.categories.has('cortex')) {
+    parts.filter(p => p.category === 'cortex').forEach(p => state.hidden.add(p.id));
+    state.categories.add('cortex');
+  }
+  partsInLobe(parts, id).forEach(p => { if (visible) state.hidden.delete(p.id); else state.hidden.add(p.id); });
+}
+
+function selectLobe(id) {
+  if (!LOBES.some(l => l.id === id)) return;
+  state.selectedLobe = id; state.selected = null;
+  state.query = ''; $('#search').value = ''; state.category = 'all';
+  state.expanded.add('cortex'); state.lobeExpanded.add(id);
+  setLobeVisible(id, true);
+  sync(); renderList(); renderInspector(); localize();
+  const list = $('#structure-list'), heading = list.querySelector(`[data-lobe="${id}"]`);
+  if (heading) list.scrollTop += heading.getBoundingClientRect().top - list.getBoundingClientRect().top - 8;
+}
+
+function renderLobeInspector(lobe) {
+  const en = getLanguage() === 'en';
+  const count = partsInLobe(parts, lobe.id).filter(p => state.hemisphere === 'both' || p.side === state.hemisphere).length;
+  $('#inspector-content').innerHTML = `<div class="detail-kicker">${lobeSwatch(lobe)}${ui(lobe.id === 'boundaries' ? '해부학적 경계' : '뇌엽')}<span>${sideName(state.hemisphere)}</span></div><h2 class="detail-name">${escape(partName(lobe))}</h2><p class="latin-name">${en ? '' : escape(lobe.aliases.split(' ')[0])}</p><div class="detail-divider"></div><h3>${ui('위치와 경계')}</h3><p class="lobe-location">${escape(en ? lobe.locationEn : lobe.location)}</p><h3>${ui('주요 기능')}</h3><p class="summary">${escape(partSummary(lobe))}</p><div class="selection-actions"><button id="focus-part">${icon('focus', 16)} ${ui('가까이')}</button><button id="isolate-part" class="${state.isolate ? 'active' : ''}" aria-pressed="${state.isolate}">${icon('eye', 16)} ${ui('단독 보기')}</button><button id="hide-part">${ui('숨기기')}</button></div><p class="lobe-source-note">${count} · ${ui('현재 반구의 하위 구조 · 왼쪽 목록에서 선택')}</p>${lobe.note ? `<p class="method-note">${escape(en ? lobe.noteEn : lobe.note)}</p>` : ''}<p class="lobe-source-note">${ui('뇌엽은 여러 기능과 연결망에 참여합니다. 색상은 해부학적 분류이며 기능의 정확한 경계가 아닙니다.')}</p><div class="detail-source"><span>${ui('설명 출처')}</span><a href="${lobe.source.url}" target="_blank" rel="noreferrer">${lobe.source.title} ↗</a><a href="${SOURCES.atlas.url}" target="_blank" rel="noreferrer">${ui('형상·명칭의 출처 ↗')}</a></div>`;
 }
 
 function renderCategories() {
@@ -142,11 +190,13 @@ function renderCategories() {
 function selectPart(id, focus = false) {
   const p = parts.find(p => p.id === id);
   if (!p) return;
+  state.selectedLobe = null;
   state.selected = id;
   if (!state.categories.has(p.category)) parts.filter(x => x.category === p.category).forEach(x => state.hidden.add(x.id));
   state.hidden.delete(id);
   state.categories.add(p.category);
   state.expanded.add(p.category);
+  if (lobeForPart(p)) state.lobeExpanded.add(lobeForPart(p).id);
   if (state.hemisphere !== 'both' && p.side !== 'median' && state.hemisphere !== p.side) state.hemisphere = p.side;
   sync(); renderList(); renderInspector(); localize();
   if (focus) scene?.focus(id);
@@ -155,10 +205,14 @@ function selectPart(id, focus = false) {
 function renderInspector() {
   if (state.mode === 'connectome') { renderConnectome(); return; }
   if (state.mode === 'tractography') { renderFiberInspector(); return; }
+  const lobe = LOBES.find(l => l.id === state.selectedLobe);
+  if (lobe) { renderLobeInspector(lobe); return; }
   const p = parts.find(p => p.id === state.selected);
   if (!p) { $('#inspector-content').innerHTML = '<div class="inspector-empty">뇌 또는 목록에서 구조를 선택하세요.</div>'; return; }
   const approximate = p.source !== 'Z-Anatomy / BodyParts3D';
   $('#inspector-content').innerHTML = `<div class="detail-kicker"><span class="structure-dot" style="--dot:${CATEGORIES[p.category].color}"></span>${CATEGORIES[p.category].name}<span>${sideName(p.side)}</span></div><h2 class="detail-name">${escape(partName(p))}</h2><p class="latin-name">${escape(p.label)}</p><div class="detail-divider"></div><span class="eyebrow">FUNCTION & ANATOMY</span><h3>이 구조의 역할</h3><p class="summary">${escape(partSummary(p))}</p><div class="selection-actions"><button id="focus-part">${icon('focus', 16)} 가까이</button><button id="isolate-part" class="${state.isolate ? 'active' : ''}" aria-pressed="${state.isolate}">${icon('eye', 16)} 단독 보기</button><button id="hide-part">${icon('hide', 16)} 숨기기</button></div><div class="fact-row"><span>영역</span><strong>${escape(regionName(p.parent || p.region))}</strong></div><div class="fact-row"><span>반구</span><strong>${sideName(p.side)}</strong></div>${approximate ? `<p class="method-note"><strong>영상 아틀라스 기반 근사 형상</strong>${escape(p.source)}에서 유래했습니다. 해부 모델에 맞춘 위치·경로에는 오차가 있습니다.</p>` : ''}${bundles.some(b => b.modelNodeIds.includes(p.id)) ? `<button class="fiber-link" data-open-fiber="${bundles.find(b => b.modelNodeIds.includes(p.id)).id}">섬유 추적으로 보기</button>` : ''}<div class="detail-source"><span>모델 출처</span><p>${escape(p.source)}</p><a href="${SOURCES.anatomy.url}" target="_blank" rel="noreferrer">신경해부학 배경 읽기 ↗</a><a href="${SOURCES.atlas.url}" target="_blank" rel="noreferrer">형상·명칭의 출처 ↗</a></div>`;
+  const parentLobe = lobeForPart(p);
+  if (parentLobe) $('.detail-divider').insertAdjacentHTML('beforebegin', `<button class="lobe-link" data-lobe="${parentLobe.id}">${lobeSwatch(parentLobe)}${escape(partName(parentLobe))} · ${ui('설명 보기')}</button>`);
 }
 
 function selectTract(id) {
@@ -235,6 +289,7 @@ function renderFiberInspector() {
 }
 
 function setMode(mode) {
+  state.selectedLobe = null;
   state.mode = mode; state.query = ''; state.isolate = false; state.hidden.clear(); $('#search').value = '';
   document.body.dataset.mode = mode;
   document.querySelectorAll('[data-mode]').forEach(b => { b.classList.toggle('active', b.dataset.mode === mode); b.setAttribute('aria-pressed', b.dataset.mode === mode); });
@@ -267,6 +322,8 @@ $('#app').addEventListener('click', event => {
   const b = event.target.closest('button'); if (!b) return;
   if (b.dataset.language) { setLanguage(b.dataset.language); sync(); renderCategories(); renderList(); renderInspector(); }
   if (b.dataset.part) selectPart(Number(b.dataset.part));
+  if (b.dataset.lobe) selectLobe(b.dataset.lobe);
+  if (b.dataset.lobeExpand) { const id = b.dataset.lobeExpand; if (state.lobeExpanded.has(id)) state.lobeExpanded.delete(id); else state.lobeExpanded.add(id); renderList(); }
   if (b.dataset.fiber) selectFiber(b.dataset.fiber);
   if (b.dataset.openFiber) { state.fiber = b.dataset.openFiber; setMode('tractography'); }
   if (b.dataset.openConnectome) { state.tract = b.dataset.openConnectome; state.representation = 'streamlines'; setMode('connectome'); }
@@ -306,9 +363,9 @@ $('#app').addEventListener('click', event => {
     else { state.categories = new Set(show ? Object.keys(CATEGORIES) : []); state.hidden.clear(); }
     sync(); renderList();
   }
-  if (b.id === 'collapse-all') { state.expanded.clear(); state.fiberExpanded.clear(); renderList(); }
+  if (b.id === 'collapse-all') { state.expanded.clear(); state.lobeExpanded.clear(); state.fiberExpanded.clear(); renderList(); }
   if (b.id === 'isolate-part') { state.isolate = !state.isolate; sync(); renderInspector(); if (state.isolate) scene?.focus(state.selected); else scene?.view('oblique'); }
-  if (b.id === 'hide-part') { state.hidden.add(state.selected); state.selected = null; state.isolate = false; sync(); renderList(); renderInspector(); }
+  if (b.id === 'hide-part') { if (state.selectedLobe) setLobeVisible(state.selectedLobe, false); else state.hidden.add(state.selected); state.selectedLobe = null; state.selected = null; state.isolate = false; sync(); renderList(); renderInspector(); }
   if (b.id === 'reset') { state.hemisphere = 'both'; state.category = 'all'; state.regionQuery = ''; state.threshold = 0.05; state.fiberDensity = 1; state.fiberContext = true; state.fiberHidden.clear(); setMode(state.mode); renderCategories(); }
   if (b.id === 'clear-search') { state.query = ''; state.category = 'all'; $('#search').value = ''; renderCategories(); renderList(); }
   if (b.id === 'zoom-in') scene?.zoom(0.8);
@@ -319,6 +376,7 @@ $('#app').addEventListener('click', event => {
 });
 $('#app').addEventListener('change', event => {
   const input = event.target;
+  if (input.dataset.lobeVisible) { setLobeVisible(input.dataset.lobeVisible, input.checked); sync(); renderList(); }
   if (input.dataset.layer) { const layer = input.dataset.layer; if (input.checked) { state.categories.add(layer); parts.filter(p => p.category === layer).forEach(p => state.hidden.delete(p.id)); } else state.categories.delete(layer); sync(); renderList(); }
   if (input.dataset.visible) {
     const id = Number(input.dataset.visible), p = parts.find(p => p.id === id);

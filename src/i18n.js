@@ -9,6 +9,11 @@ export const partName = part => language === 'en' ? part.en : `${part.ko} (${par
 export const partSummary = part => language === 'en' ? part.summaryEn : part.summary;
 
 const entries = {
+  '뇌엽 색상 · 선택하여 설명 보기': 'Lobe colours · select for details',
+  '뇌엽': 'Cerebral lobe', '해부학적 경계': 'Anatomical landmarks', '하위 구조': 'Substructures',
+  '위치와 경계': 'Location & boundaries', '주요 기능': 'Main functions', '설명 보기': 'About this lobe', '설명 출처': 'Description sources',
+  '현재 반구의 하위 구조 · 왼쪽 목록에서 선택': 'substructures in the current hemisphere view · select in the library',
+  '뇌엽은 여러 기능과 연결망에 참여합니다. 색상은 해부학적 분류이며 기능의 정확한 경계가 아닙니다.': 'Each lobe participates in several functions and networks. Colours identify anatomical groups, not exact functional boundaries.',
   '섬유 추적': 'Tractography', '해부 모형': 'Anatomical model', '경로 표현': 'Pathway view',
   '전체 표시': 'Show all', '전체 숨기기': 'Hide all', '모두 접기': 'Collapse all', '표시': 'Visible',
   '표시 밀도': 'Display density', '주변 경로': 'Context tracts', '전체 섬유': 'All fibres',

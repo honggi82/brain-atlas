@@ -53,7 +53,78 @@ def run():
                 assert page.locator('#search').input_value() == 'Hippocampus'
                 page.locator('[data-language="ko"]').click()
                 assert page.locator('.detail-name').inner_text() == '해마 (Hippocampus)'
+                page.locator('#reset').click()
+                assert page.locator('#lobe-legend [data-lobe]').count() == 7
+                assert page.locator('#lobe-legend').bounding_box()['y'] + page.locator('#lobe-legend').bounding_box()['height'] <= page.locator('#scene-host').bounding_box()['y']
+                page.locator('#lobe-legend [data-lobe="frontal"]').click()
+                header = page.locator('.lobe-heading [data-lobe="frontal"]').bounding_box()
+                library = page.locator('#structure-list').bounding_box()
+                assert library['y'] <= header['y'] <= library['y'] + library['height'] - header['height']
+                assert page.locator('.detail-name').inner_text() == '이마엽 (Frontal lobe)'
+                assert page.locator('#scene-host').get_attribute('data-selected-structures') == '42'
+                assert page.locator('[data-lobe-expand]').count() == 7
+                page.locator('#isolate-part').click()
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '42'
+                for side in ['left', 'right']:
+                    page.locator(f'[data-side="{side}"]').click()
+                    assert page.locator('#scene-host').get_attribute('data-visible-structures') == '21'
+                    assert page.locator('#scene-host').get_attribute('data-selected-lobe') == 'frontal'
+                page.locator('[data-side="both"]').click()
+                page.locator('[data-visible="284"]').uncheck()
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '41'
+                assert page.locator('[data-lobe-visible="frontal"]').evaluate('(e) => e.indeterminate')
+                page.locator('[data-lobe-visible="frontal"]').check()
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '42'
+                page.locator('[data-language="en"]').click()
+                assert page.locator('.detail-name').inner_text() == 'Frontal lobe'
+                assert 'voluntary movement' in page.locator('.summary').inner_text()
+                assert not page.locator('#inspector-content').evaluate('(e) => /[가-힣]/.test(e.innerText)'), page.locator('#inspector-content').inner_text()
+                page.locator('[data-part="284"]').click()
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '1'
+                assert page.locator('#floating-en').inner_text() == 'Frontal lobe'
+                page.locator('.inspector [data-lobe="frontal"]').click()
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '42'
+                page.locator('#isolate-part').click()
+                page.locator('#hide-all').click()
+                page.locator('[data-lobe-visible="parietal"]').check()
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '14'
+                page.locator('#lobe-legend [data-lobe="frontal"]').click()
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '56'
+                page.locator('#hide-part').click()
+                assert page.locator('#scene-host').get_attribute('data-visible-structures') == '14'
+                page.locator('#search').fill('두정엽')
+                assert page.locator('.lobe-group:has([data-lobe-visible="parietal"]) [data-part]').count() == 14
+                assert page.locator('[data-part="56"]').count() == 1
+                page.locator('[data-language="ko"]').click()
+                for lobe, count in [('frontal', 42), ('parietal', 14), ('temporal', 22), ('occipital', 18), ('insula', 2), ('limbic', 12), ('boundaries', 18)]:
+                    page.locator(f'#lobe-legend [data-lobe="{lobe}"]').click()
+                    assert page.locator('#search').input_value() == ''
+                    assert page.locator('#scene-host').get_attribute('data-selected-structures') == str(count)
+                    assert page.locator('.lobe-location').inner_text()
+                    page.locator('[data-language="en"]').click()
+                    assert not page.locator('#inspector-content').evaluate('(e) => /[가-힣]/.test(e.innerText)'), page.locator('#inspector-content').inner_text()
+                    page.locator('[data-language="ko"]').click()
+                page.locator('#reset').click()
+                page.locator('#lobe-legend [data-lobe="frontal"]').click()
+                page.locator('#scene-host').scroll_into_view_if_needed()
+                page.wait_for_selector('.floating-label:not([hidden])')
+                sides = page.locator('.hemisphere-controls').bounding_box()
+                assert sides['y'] + sides['height'] <= page.locator('.opacity-box').bounding_box()['y']
+                page.screenshot(path=str(OUT / f'lobes-{width}.png'))
+                assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+                canvas = page.locator('#scene-host canvas')
+                box = canvas.bounding_box()
+                point = {'x': box['width'] * 0.5, 'y': box['height'] * 0.4}
+                page.mouse.move(box['x'] + point['x'], box['y'] + point['y'])
+                page.locator('.hover-label').wait_for(state='visible')
+                assert 'Frontal lobe' in page.locator('.hover-label').inner_text()
+                canvas.click(position=point)
+                assert page.locator('#scene-host').get_attribute('data-selected-lobe') == ''
+                assert 'Frontal lobe' in page.locator('#floating-en').inner_text()
+                assert page.locator('.inspector [data-lobe="frontal"]').count() == 1
+                print(f'PASS: {width} x {height}; 6 lobes and boundary group, source membership, labels, descriptions, child selection, visibility, isolation, hemispheres and Kr/En', flush=True)
                 page.locator('[data-mode="tractography"]').click()
+                assert page.locator('#lobe-legend').is_hidden()
                 page.wait_for_selector('#scene-host[data-fiber-state="ready"]')
                 page.locator('#fiber-context').uncheck()
                 page.wait_for_function('document.querySelector("#scene-host").dataset.visibleFibers === "2000"')
@@ -72,6 +143,7 @@ def run():
                 page.wait_for_selector('#scene-host[data-fiber-state="ready"]')
                 assert page.locator('.probability-table tbody tr').count() == 67
                 page.locator('[data-representation="anatomy"]').click()
+                assert page.locator('#lobe-legend').is_hidden()
                 assert page.locator('#scene-host').get_attribute('data-renderer') == 'anatomy'
                 page.locator('[data-representation="streamlines"]').click()
                 page.locator('#search').fill('PTAT')

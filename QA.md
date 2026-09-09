@@ -1,5 +1,19 @@
 # Verification — 2026-09-09
 
+## Lobe labels and descriptions
+
+- Shared lobe metadata now drives mesh colours, the stage legend, cortical subgroups and bilingual location/function descriptions. All 128 cortical structures belong to exactly one source-derived group; source meshes and original part metadata are unchanged.
+- `npm.cmd run check`: **15 JavaScript files** syntax-checked; UTF-8 checks passed. `npm.cmd test`: **18/18 passed**. Production build passed with the existing advisory for the Three.js scene chunk (571.27 kB; 146.85 kB gzipped).
+- The shipped UI was exercised in isolated Chromium at **1280 × 720** and **390 × 844**. All six lobes and the separate boundary/sulcus group display names, locations, functions and sources in Kr/En. Korean includes English in parentheses; the tested English inspectors contain no Korean text.
+- Frontal lobe isolation displays **42** structures bilaterally and **21** on either side. Hiding one child changes this to **41** and makes the group checkbox mixed. Returning to the group restores all 42. Selecting a child preserves individual selection and links back to its lobe.
+- Starting with everything hidden, enabling parietal shows **14** structures; selecting frontal then shows **56**; hiding frontal leaves **14**. Lobe selection scrolls only the library to the corresponding heading. Legend, model area and hemisphere/opacity controls do not overlap in tested viewports; no horizontal overflow was detected.
+- A test initially expected the query `두정엽` to return only 14 parietal members. Inspection showed that the existing function/alias search correctly also finds boundary sulci and related tracts. The test was corrected to assert the 14 members within the parietal group and retain a related central-sulcus result; the search was not narrowed to satisfy the test.
+- Existing anatomy, streamline density, hemisphere, whole-brain, matrix and unresolved-code recovery flows pass on both viewports. The preserved original app's AF, CST and OR selections also pass. No application page errors were captured.
+- Pointer hover over the rendered frontal cortex displayed its anatomical part and lobe. Clicking that same rendered geometry selected the part, retained the lobe in its floating label, and displayed the inspector link back to frontal-lobe details on both viewports.
+- Local screenshots: `test-results/lobes-1280.png` and `test-results/lobes-390.png`. Both were visually inspected. Temporary browsers and servers are closed after QA. The before-change source backups are `src/main.js.bak-20260909-lobes`, `src/scene.js.bak-20260909-lobes` and `src/i18n.js.bak-20260909-lobes`, excluded from Git. Their LF newline style is preserved.
+
+No new segmentation was created. The source's composite insula and incomplete limbic grouping are explained in the interface. Independent expert anatomical review, physical mobile devices, Safari/Firefox and public hosting remain outside this verification.
+
 ## Streamline and unified-tree upgrade
 
 The previous working app remains in `../brain-atlas` at commit `4bb19a9`. The candidate is in `brain-atlas-v2` and reuses the exact same unmodified anatomical GLB, terminology catalogue and probability matrix.

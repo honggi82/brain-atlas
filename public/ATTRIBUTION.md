@@ -66,3 +66,9 @@ Korean annotations summarise anatomical location and commonly taught roles; they
 - OpenStax, *Anatomy and Physiology 2e*, The Central Nervous System: https://openstax.org/books/anatomy-and-physiology-2e/pages/13-2-the-central-nervous-system
 - OpenStax, *Anatomy and Physiology 2e*, Motor Responses: https://openstax.org/books/anatomy-and-physiology-2e/pages/14-3-motor-responses
 - The structure labels and model provenance above.
+
+Lobe labels, aliases, locations and short functional summaries are independently written in Korean and English. Lobe membership preserves the source `region` for all 128 cortical structures: frontal 42, parietal 14, temporal 22, occipital 18, insula 2, limbic 12, and unassigned telencephalic sulci 18 (both hemispheres). The last group is not a seventh lobe. The insula source mesh is composite; the limbic grouping is incomplete and source-specific. No new anatomical segmentation or functional parcellation was inferred.
+
+- NINDS, *Brain Basics: Know Your Brain*: https://www.ninds.nih.gov/health-information/public-education/brain-basics/brain-basics-know-your-brain (also available as the institute's linked PDF).
+- Avery et al. (2015), *A common gustatory and interoceptive representation in the human mid-insula*, Human Brain Mapping 36:2996–3006, doi:10.1002/hbm.22823: https://pmc.ncbi.nlm.nih.gov/articles/PMC4795826/
+- OpenStax CNS chapter above provides additional boundary and limbic anatomy background.

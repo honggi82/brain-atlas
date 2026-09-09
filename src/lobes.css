@@ -1,0 +1,20 @@
+.lobe-legend{position:absolute;top:61px;left:26px;right:26px;display:flex;flex-wrap:wrap;gap:5px;align-content:start}
+.lobe-legend button{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid #d8ded3;border-radius:5px;background:#fffefa;font-size:10px;line-height:1.4;text-align:left}
+.lobe-swatch{display:inline-block;width:10px;height:10px;flex:0 0 10px;border-radius:3px;background:var(--lobe-color);border:1px solid #0002}
+.lobe-legend button[aria-pressed=true],.lobe-heading button[aria-pressed=true]{border-color:#527c65;background:#e8eee4;font-weight:650}
+body[data-mode=anatomy] .stage-heading h2{display:none}
+body[data-mode=anatomy] #scene-host{top:181px;bottom:177px}
+body[data-mode=anatomy] .camera-bar{top:185px}
+body[data-mode=anatomy] .stage-bottom{bottom:145px}
+.lobe-group{margin:7px 0 8px 8px;border-left:2px solid var(--lobe-color);padding-left:5px}
+.lobe-heading{display:flex;align-items:center;gap:3px}
+.lobe-heading input{flex:0 0 15px;margin:0 3px}
+.lobe-heading [data-lobe]{display:flex;align-items:center;gap:6px;flex:1;min-width:0;text-align:left;padding:8px 3px;font-size:11px;line-height:1.6;border:1px solid transparent;border-radius:4px}
+.lobe-heading [data-lobe-expand]{padding:8px 4px;font-size:11px;min-width:27px}
+.lobe-group>.tree-row{margin-left:4px}
+.lobe-count{margin:4px 9px;font-size:9px;color:#687760}
+.lobe-link{display:flex;align-items:center;gap:8px;text-align:left;font-size:12px;line-height:1.7;padding:12px 8px;border:1px solid #d6dfd0;border-radius:5px;width:100%;margin:15px 0}
+.lobe-source-note{font-size:11px;line-height:1.8;color:#64715c}
+.lobe-location{font-size:12px;line-height:1.8;color:#596b4e}
+@media(min-width:1200px){body[data-mode=anatomy] #scene-host{top:138px}body[data-mode=anatomy] .camera-bar{top:145px}}
+@media(max-width:600px){body[data-mode=anatomy] .visual{height:660px}.lobe-legend{top:52px;left:18px;right:18px;gap:5px}.lobe-legend button{font-size:10px;padding:6px}.lobe-heading [data-lobe]{font-size:12px}.lobe-heading input{width:18px;height:18px;flex-basis:18px}body[data-mode=anatomy] #scene-host{top:192px}body[data-mode=anatomy] .camera-bar{top:198px}body[data-mode=anatomy] .stage-bottom{bottom:139px}}

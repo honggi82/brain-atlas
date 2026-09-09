@@ -6,6 +6,7 @@ import { PointerTap } from './pointer-tap.js';
 import { CATEGORIES } from './knowledge.js';
 import { partName, ui } from './i18n.js';
 import { createTractLayer } from './tract-layer.js';
+import { lobeForPart } from './lobes.js';
 
 export async function createScene(host, parts, callbacks, fiberManifest) {
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
@@ -60,9 +61,9 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
     if (!dirty) return;
     renderer.render(scene, camera);
     dirty = false;
-    const pieces = fiberMode ? (fibers.selected() ? [fibers.selected()] : null) : meshes.get(current?.selected);
+    const pieces = fiberMode ? (fibers.selected() ? [fibers.selected()] : null) : selectedPieces(current?.selected);
     if (pieces?.some(mesh => mesh.visible)) {
-      const point = bounds(pieces).getCenter(new T.Vector3()).project(camera);
+      const point = bounds(pieces.filter(mesh => mesh.visible)).getCenter(new T.Vector3()).project(camera);
       floating.hidden = point.z > 1 || Math.abs(point.x) > 0.95 || Math.abs(point.y) > 0.94;
       floating.style.left = `${(point.x + 1) * host.clientWidth / 2}px`;
       floating.style.top = `${(1 - point.y) * host.clientHeight / 2}px`;
@@ -83,6 +84,12 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
     const box = new T.Box3();
     for (const mesh of pieces) box.expandByObject(mesh);
     return box;
+  }
+
+  function selectedPieces(id) {
+    return current?.selectedLobe
+      ? [...meshes.entries()].filter(([key]) => lobeForPart(partMap.get(key))?.id === current.selectedLobe).flatMap(([, pieces]) => pieces)
+      : meshes.get(id);
   }
 
   function fit(box = fiberMode ? fibers.bounds() : fullBox, direction) {
@@ -118,25 +125,28 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
     for (const [id, pieces] of meshes) {
       const part = partMap.get(id);
       const hemisphere = state.hemisphere === 'both' || part.side === 'median' || part.side === state.hemisphere;
-      const active = id === state.selected;
+      const active = state.selectedLobe ? lobeForPart(part)?.id === state.selectedLobe : id === state.selected;
       let opacity = part.category === 'cortex' || part.category === 'white_matter' ? state.opacity : 1;
       if (active) opacity = 1;
       for (const mesh of pieces) {
         mesh.visible = hemisphere && state.categories.has(part.category) && !state.hidden.has(id)
-          && (!state.isolate || id === state.selected)
+          && (!state.isolate || active)
           && (state.mode !== 'connectome' || active || part.category === 'cortex');
         mesh.material.opacity = opacity;
         mesh.material.transparent = opacity < 1;
         mesh.material.depthWrite = opacity >= 0.95;
         mesh.material.color.copy(mesh.userData.baseColor);
         if (state.mode === 'connectome') mesh.material.color.set('#b5bcb5');
-        mesh.material.emissive.set(active ? 0x246d59 : 0x000000);
-        mesh.material.emissiveIntensity = active ? 0.3 : 0;
-        if (active) mesh.material.color.set(state.mode === 'connectome' ? '#087d67' : '#82b6a1');
+        mesh.material.emissive.set(active && !state.selectedLobe ? 0x246d59 : 0x000000);
+        mesh.material.emissiveIntensity = active && !state.selectedLobe ? 0.3 : 0;
+        if (state.selectedLobe && !active) mesh.material.color.multiplyScalar(0.55);
+        if (active && !state.selectedLobe) mesh.material.color.set(state.mode === 'connectome' ? '#087d67' : '#82b6a1');
         mesh.renderOrder = active ? 2 : opacity < 0.95 ? 1 : 0;
       }
     }
     host.dataset.visibleStructures = fiberMode ? 0 : [...meshes.values()].filter(pieces => pieces.some(m => m.visible)).length;
+    host.dataset.selectedLobe = state.selectedLobe || '';
+    host.dataset.selectedStructures = fiberMode ? 0 : (selectedPieces(state.selected) || []).filter(m => m.visible).reduce((ids, m) => ids.add(m.userData.nodeId), new Set()).size;
     dirty = true;
   }
 
@@ -156,7 +166,9 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
     canvas.style.cursor = id == null ? 'grab' : 'pointer';
     hover.hidden = id == null;
     if (id != null) {
-      hover.textContent = partName(fiberMode ? fiberManifest.bundles.find(b => b.id === id) : partMap.get(id));
+      const part = fiberMode ? fiberManifest.bundles.find(b => b.id === id) : partMap.get(id);
+      const lobe = !fiberMode && lobeForPart(part);
+      hover.textContent = `${partName(part)}${lobe ? ` · ${partName(lobe)}` : ''}`;
       const rect = canvas.getBoundingClientRect();
       hover.style.left = `${Math.min(host.clientWidth - 170, Math.max(8, e.clientX - rect.left + 12))}px`;
       hover.style.top = `${Math.max(8, e.clientY - rect.top - 34)}px`;
@@ -197,8 +209,7 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
       if (part.category !== 'tracts') core.expandByObject(mesh);
       const color = new T.Color(CATEGORIES[part.category].color);
       if (part.category === 'cortex') {
-        const shades = { 'Frontal lobe': '#ca9c85', 'Parietal lobe': '#c0af88', 'Temporal lobe': '#bc9196', 'Occipital lobe': '#9faaa0' };
-        color.set(shades[part.region] || '#c2a294');
+        color.set(lobeForPart(part).color);
         if (/sulcus|sulci|Lat Fis/.test(part.label) && !/gyrus|gyri/.test(part.label)) color.multiplyScalar(0.78);
       }
       const original = mesh.material;
@@ -242,7 +253,7 @@ export async function createScene(host, parts, callbacks, fiberManifest) {
   return {
     update,
     dispose,
-    focus(id) { if (fiberMode) fit(fibers.bounds(current.fiber)); else { const pieces = meshes.get(id); if (pieces) fit(bounds(pieces)); } },
+    focus(id) { if (fiberMode) fit(fibers.bounds(current.fiber)); else { const pieces = selectedPieces(id); if (pieces) fit(bounds(pieces.filter(m => m.visible))); } },
     view,
     retryFibers() { fibers.retry(); },
     zoom(factor) { camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target); controls.update(); dirty = true; },
